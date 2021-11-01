@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<addon id="script.service.autorefresh" name="Autorefesher" version="0.0.1" provider-name="FreewheelingHuman">
+    <requires>
+        <import addon="xbmc.python" version="3.0.0" />
+    </requires>
+	<extension point="xbmc.python.script" library="addon.py">
+		<provides>executable</provides>
+	</extension>
+</addon>
