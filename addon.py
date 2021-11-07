@@ -1,4 +1,8 @@
 import xbmcgui
 
+from resources.lib.helpers import *
 
-xbmcgui.Dialog().ok("Test", "This is a test, obviously.")
+
+response = jsonrpc("VideoLibrary.GetTVShows", properties=["file"])
+
+xbmcgui.Dialog().ok("Test", str(response))
