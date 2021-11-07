@@ -11,4 +11,4 @@ def jsonrpc(method, **params):
         "id": 1
     }
     result = xbmc.executeJSONRPC(json.dumps(request))
-    return json.loads(result)
+    return json.loads(result)["result"]
