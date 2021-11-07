@@ -1,3 +1,3 @@
-from resources.lib.refresher import *
+from resources.lib.refresher import refresh
 
 refresh()
