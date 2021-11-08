@@ -11,7 +11,7 @@ def refresh():
     profile_folder = xbmcaddon.Addon().getAddonInfo('profile')
     state_file = xbmcvfs.translatePath(f'{profile_folder}/state.json')
     last_scan = _get_last_scan(state_file)
-    scan_time = datetime.datetime.now()
+    scan_time = datetime.datetime.now(datetime.timezone.utc)
 
     movies = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])['movies']
     for movie in movies:
@@ -35,7 +35,7 @@ def _file_warrants_refresh(file, last_scan):
     if not xbmcvfs.exists(file):
         return False
     stats = xbmcvfs.Stat(file)
-    last_modified = datetime.datetime.fromtimestamp(stats.st_mtime())
+    last_modified = datetime.datetime.fromtimestamp(stats.st_mtime(), datetime.timezone.utc)
     if last_modified > last_scan:
         return True
     return False
@@ -43,12 +43,12 @@ def _file_warrants_refresh(file, last_scan):
 
 def _get_last_scan(state_file):
     if not xbmcvfs.exists(state_file):
-        return datetime.datetime.now()
+        return datetime.datetime.now(datetime.timezone.utc)
 
     with xbmcvfs.File(state_file) as file:
         state = json.loads(file.read())
 
-    return datetime.datetime.fromtimestamp(state['last_scan'])
+    return datetime.datetime.fromtimestamp(state['last_scan'], datetime.timezone.utc)
 
 
 def _jsonrpc(method, **params):
