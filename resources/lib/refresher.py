@@ -2,11 +2,9 @@ import datetime
 import json
 import os
 
+import xbmc
 import xbmcaddon
-import xbmcgui
 import xbmcvfs
-
-from resources.lib.helpers import *
 
 
 def refresh():
@@ -15,20 +13,20 @@ def refresh():
     last_scan = _get_last_scan(state_file)
     scan_time = datetime.datetime.now()
 
-    movies = jsonrpc('VideoLibrary.GetMovies', properties=['file'])['movies']
+    movies = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])['movies']
     for movie in movies:
         if _need_refresh_movie(movie['file'], last_scan):
-            jsonrpc('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
+            _jsonrpc('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
 
-    tv_shows = jsonrpc('VideoLibrary.GetTVShows', properties=['file'])['tvshows']
+    tv_shows = _jsonrpc('VideoLibrary.GetTVShows', properties=['file'])['tvshows']
     for tv_show in tv_shows:
         if _need_refresh_tv_show(tv_show['file'], last_scan):
-            jsonrpc('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
+            _jsonrpc('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
 
-    episodes = jsonrpc('VideoLibrary.GetEpisodes', properties=['file'])['episodes']
+    episodes = _jsonrpc('VideoLibrary.GetEpisodes', properties=['file'])['episodes']
     for episode in episodes:
         if _need_refresh_episode(episode['file'], last_scan):
-            jsonrpc('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
+            _jsonrpc('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
     _update_last_scan(state_file, scan_time)
 
@@ -51,6 +49,17 @@ def _get_last_scan(state_file):
         state = json.loads(file.read())
 
     return datetime.datetime.fromtimestamp(state['last_scan'])
+
+
+def _jsonrpc(method, **params):
+    request = {
+        'jsonrpc': '2.0',
+        'method': method,
+        'params': params,
+        'id': 1
+    }
+    result = xbmc.executeJSONRPC(json.dumps(request))
+    return json.loads(result)['result']
 
 
 def _need_refresh_episode(file, last_scan):
