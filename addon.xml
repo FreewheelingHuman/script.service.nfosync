@@ -6,4 +6,5 @@
 	<extension point="xbmc.python.script" library="script.py">
 		<provides>executable</provides>
 	</extension>
+    <extension point="xbmc.service" library="service.py" />
 </addon>
