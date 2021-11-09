@@ -8,11 +8,11 @@ import xbmcvfs
 from resources.lib.settings import Settings
 
 
-def refresh(clean=False):
+def refresh(clean=False, continuation=False):
     settings = Settings()
 
     # Prevent multiple refreshes from running simultaneously
-    if settings.in_progress.active:
+    if settings.in_progress.active and not continuation:
         return
     settings.in_progress.active = True
 

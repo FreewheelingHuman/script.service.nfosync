@@ -26,8 +26,7 @@ class Service(xbmc.Monitor):
 
     def onCleanFinished(self, library):
         if library == 'video' and self._settings.in_progress.active:
-            self._settings.in_progress.active = False
-            refresh(clean=self._settings.in_progress.clean)
+            refresh(clean=self._settings.in_progress.clean, continuation=True)
 
 
 if __name__ == "__main__":
