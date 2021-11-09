@@ -1,3 +1,5 @@
+import datetime
+
 import xbmc
 import xbmcaddon
 
@@ -9,6 +11,13 @@ class Service(xbmc.Monitor):
         super().__init__()
 
         self._addon = xbmcaddon.Addon()
+
+        # If the last scan time has never been set, we'll need to set it
+        if self._addon.getSetting('state.last_scan') == 'none':
+            self._addon.setSetting(
+                'state.last_scan',
+                datetime.datetime.now(datetime.timezone.utc).isoformat(timespec='seconds')
+            )
 
         # Clear the in progress status so if a run didn't finish, a restart will at least fix it
         self._addon.setSettingBool('in_progress.active', False)

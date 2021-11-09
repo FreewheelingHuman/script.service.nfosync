@@ -33,3 +33,15 @@ msgstr ""
 msgctxt "#32005"
 msgid "Refresh Options"
 msgstr ""
+
+msgctxt "#32006"
+msgid "Scan State"
+msgstr ""
+
+msgctxt "#32007"
+msgid "Time of last scan"
+msgstr ""
+
+msgctxt "#32008"
+msgid "Active refresh?"
+msgstr ""

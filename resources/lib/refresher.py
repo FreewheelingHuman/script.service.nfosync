@@ -21,9 +21,7 @@ def refresh(clean=False):
         _jsonrpc('VideoLibrary.Clean', showdialogs=False)
         return
 
-    profile_folder = addon.getAddonInfo('profile')
-    state_file = xbmcvfs.translatePath(f'{profile_folder}/state.json')
-    last_scan = _get_last_scan(state_file)
+    last_scan = datetime.datetime.fromisoformat(addon.getSetting('state.last_scan'))
     scan_time = datetime.datetime.now(datetime.timezone.utc)
 
     movies = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])['movies']
@@ -41,8 +39,7 @@ def refresh(clean=False):
         if _need_refresh_episode(episode['file'], last_scan):
             _jsonrpc('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
-    _update_last_scan(state_file, scan_time)
-
+    addon.setSetting('state.last_scan', scan_time.isoformat(timespec='seconds'))
     addon.setSettingBool('in_progress.active', False)
 
 
@@ -54,16 +51,6 @@ def _file_warrants_refresh(file, last_scan):
     if last_modified > last_scan:
         return True
     return False
-
-
-def _get_last_scan(state_file):
-    if not xbmcvfs.exists(state_file):
-        return datetime.datetime.now(datetime.timezone.utc)
-
-    with xbmcvfs.File(state_file) as file:
-        state = json.loads(file.read())
-
-    return datetime.datetime.fromtimestamp(state['last_scan'], datetime.timezone.utc)
 
 
 def _jsonrpc(method, **params):
@@ -112,11 +99,3 @@ def _need_refresh_tv_show(file, last_scan):
 
     tv_show_nfo = os.path.join(file, 'tvshow.nfo')
     return _file_warrants_refresh(tv_show_nfo, last_scan)
-
-
-def _update_last_scan(state_file, scan_time):
-    state = {'last_scan': scan_time.timestamp()}
-
-    xbmcvfs.mkdirs(os.path.dirname(state_file))
-    with xbmcvfs.File(state_file, 'w') as file:
-        file.write(json.dumps(state))

@@ -21,10 +21,21 @@
 		</category>
 		<category id="in_progress" label="32003" help="">
 			<group id="4" label="32003">
-				<setting id="in_progress.active" type="boolean" label="32002" help="">
+				<setting id="in_progress.active" type="boolean" label="32008" help="">
 					<level>4</level>
 					<default>false</default>
 					<control type="toggle" />
+				</setting>
+			</group>
+		</category>
+		<category id="state" label="32006" help="">
+			<group id="5" label="32006">
+				<setting id="state.last_scan" type="string" label="32007" help="">
+					<level>4</level>
+					<default>none</default>
+					<control type="edit" format="string">
+						<heading>32007</heading>
+					</control>
 				</setting>
 			</group>
 		</category>
