@@ -7,8 +7,21 @@ import xbmcaddon
 import xbmcvfs
 
 
-def refresh():
-    profile_folder = xbmcaddon.Addon().getAddonInfo('profile')
+def refresh(clean=False):
+    addon = xbmcaddon.Addon()
+
+    # Prevent multiple refreshes from running simultaneously
+    if addon.getSettingBool('in_progress.active'):
+        return
+    addon.setSettingBool('in_progress.active', True)
+
+    # In order to let clean finish first, we hop out and then run again
+    # without the clean once the monitor sees that the clean is completed.
+    if clean:
+        _jsonrpc('VideoLibrary.Clean', showdialogs=False)
+        return
+
+    profile_folder = addon.getAddonInfo('profile')
     state_file = xbmcvfs.translatePath(f'{profile_folder}/state.json')
     last_scan = _get_last_scan(state_file)
     scan_time = datetime.datetime.now(datetime.timezone.utc)
@@ -29,6 +42,8 @@ def refresh():
             _jsonrpc('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
     _update_last_scan(state_file, scan_time)
+
+    addon.setSettingBool('in_progress.active', False)
 
 
 def _file_warrants_refresh(file, last_scan):

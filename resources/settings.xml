@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<settings version="1">
+	<section id="script.service.autorefresh">
+		<category id="manual" label="32001">
+			<group id="1" label="32005">
+				<setting id="manual.clean" type="boolean" label="32002" help="">
+					<level>3</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+			</group>
+		</category>
+		<category id="on_start" label="32004">
+			<group id="2" label="32005">
+				<setting id="on_start.clean" type="boolean" label="32002" help="">
+					<level>3</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+			</group>
+		</category>
+		<category id="in_progress" label="32003" help="">
+			<group id="4" label="32003">
+				<setting id="in_progress.active" type="boolean" label="32002" help="">
+					<level>4</level>
+					<default>false</default>
+					<control type="toggle" />
+				</setting>
+			</group>
+		</category>
+	</section>
+</settings>
