@@ -24,7 +24,7 @@ class Service(xbmc.Monitor):
         while not self.abortRequested():
             self.waitForAbort(100)
 
-    def onCleanFinished(self, library):
+    def onCleanFinished(self, library: str) -> None:
         if library == 'video' and self._settings.in_progress.active:
             refresh(clean=self._settings.in_progress.clean, continuation=True)
 

@@ -8,7 +8,7 @@ import xbmcvfs
 from resources.lib.settings import Settings
 
 
-def refresh(clean=False, continuation=False):
+def refresh(clean: bool = False, continuation: bool = False) -> None:
     settings = Settings()
 
     # Prevent multiple refreshes from running simultaneously
@@ -44,7 +44,7 @@ def refresh(clean=False, continuation=False):
     settings.in_progress.active = False
 
 
-def _file_warrants_refresh(file, last_scan):
+def _file_warrants_refresh(file: str, last_scan: datetime) -> bool:
     if not xbmcvfs.exists(file):
         return False
     stats = xbmcvfs.Stat(file)
@@ -54,7 +54,7 @@ def _file_warrants_refresh(file, last_scan):
     return False
 
 
-def _jsonrpc(method, **params):
+def _jsonrpc(method: str, **params):
     request = {
         'jsonrpc': '2.0',
         'method': method,
@@ -65,7 +65,7 @@ def _jsonrpc(method, **params):
     return json.loads(result)['result']
 
 
-def _need_refresh_episode(file, last_scan):
+def _need_refresh_episode(file: str, last_scan: datetime) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
@@ -74,7 +74,7 @@ def _need_refresh_episode(file, last_scan):
     return _file_warrants_refresh(filename_nfo, last_scan)
 
 
-def _need_refresh_movie(file, last_scan):
+def _need_refresh_movie(file: str, last_scan: datetime) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
@@ -93,7 +93,7 @@ def _need_refresh_movie(file, last_scan):
     return False
 
 
-def _need_refresh_tv_show(file, last_scan):
+def _need_refresh_tv_show(file: str, last_scan: datetime) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False

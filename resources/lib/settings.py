@@ -2,6 +2,8 @@ import datetime
 
 import xbmcaddon
 
+from typing import Optional
+
 
 class Settings:
 
@@ -13,18 +15,18 @@ class Settings:
         self.state = self.State(self._addon)
 
     class SubGroup:
-        def __init__(self, addon):
+        def __init__(self, addon: xbmcaddon.Addon):
             self._addon = addon
 
     class ActionGroup(SubGroup):
         _clean = None
 
         @property
-        def clean(self):
+        def clean(self) -> bool:
             return self._addon.getSettingBool(self._clean)
 
         @clean.setter
-        def clean(self, value):
+        def clean(self, value: bool) -> None:
             self._addon.setSettingBool(self._clean, value)
 
     class Manual(ActionGroup):
@@ -37,26 +39,26 @@ class Settings:
         _active = 'in_progress.active'
 
         @property
-        def active(self):
+        def active(self) -> bool:
             return self._addon.getSettingBool(self._active)
 
         @active.setter
-        def active(self, value):
+        def active(self, value: bool):
             self._addon.setSettingBool(self._active, value)
 
         @property
-        def clean(self):
+        def clean(self) -> bool:
             return False
 
         @clean.setter
-        def clean(self, value):
+        def clean(self, value: bool):
             raise RuntimeError('Clean value cannot be set for the in_progress action group.')
 
     class State(SubGroup):
         _last_scan = 'state.last_scan'
 
         @property
-        def last_scan(self):
+        def last_scan(self) -> Optional[datetime]:
             iso_string = self._addon.getSetting(self._last_scan)
             if iso_string == '':
                 return None
@@ -67,5 +69,5 @@ class Settings:
             return last_scan
 
         @last_scan.setter
-        def last_scan(self, value):
+        def last_scan(self, value: datetime):
             self._addon.setSetting(self._last_scan, value.isoformat(timespec='seconds'))
