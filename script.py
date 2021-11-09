@@ -1,9 +1,6 @@
-import xbmcaddon
-
 from resources.lib.refresher import refresh
+from resources.lib.settings import Settings
 
 
-addon = xbmcaddon.Addon()
-clean = addon.getSettingBool('manual.clean')
-
-refresh(clean=clean)
+settings = Settings()
+refresh(clean=settings.manual.clean)

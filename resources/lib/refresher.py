@@ -3,17 +3,18 @@ import json
 import os
 
 import xbmc
-import xbmcaddon
 import xbmcvfs
+
+from resources.lib.settings import Settings
 
 
 def refresh(clean=False):
-    addon = xbmcaddon.Addon()
+    settings = Settings()
 
     # Prevent multiple refreshes from running simultaneously
-    if addon.getSettingBool('in_progress.active'):
+    if settings.in_progress.active:
         return
-    addon.setSettingBool('in_progress.active', True)
+    settings.in_progress.active = True
 
     # In order to let clean finish first, we hop out and then run again
     # without the clean once the monitor sees that the clean is completed.
@@ -21,7 +22,7 @@ def refresh(clean=False):
         _jsonrpc('VideoLibrary.Clean', showdialogs=False)
         return
 
-    last_scan = datetime.datetime.fromisoformat(addon.getSetting('state.last_scan'))
+    last_scan = settings.state.last_scan
     scan_time = datetime.datetime.now(datetime.timezone.utc)
 
     movies = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])['movies']
@@ -39,8 +40,8 @@ def refresh(clean=False):
         if _need_refresh_episode(episode['file'], last_scan):
             _jsonrpc('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
-    addon.setSetting('state.last_scan', scan_time.isoformat(timespec='seconds'))
-    addon.setSettingBool('in_progress.active', False)
+    settings.state.last_scan = scan_time
+    settings.in_progress.active = False
 
 
 def _file_warrants_refresh(file, last_scan):

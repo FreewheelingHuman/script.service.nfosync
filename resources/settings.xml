@@ -32,7 +32,10 @@
 			<group id="5" label="32006">
 				<setting id="state.last_scan" type="string" label="32007" help="">
 					<level>4</level>
-					<default>none</default>
+					<default/>
+					<constraints>
+						<allowempty>true</allowempty>
+					</constraints>
 					<control type="edit" format="string">
 						<heading>32007</heading>
 					</control>
