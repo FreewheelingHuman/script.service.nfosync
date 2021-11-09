@@ -30,6 +30,7 @@ class Service(xbmc.Monitor):
 
     def onCleanFinished(self, library):
         if library == 'video' and self._addon.getSettingBool('in_progress.active'):
+            self._addon.setSettingBool('in_progress.active', False)
             refresh(clean=False)
 
 
