@@ -25,18 +25,18 @@ def refresh(clean=False):
     last_scan = settings.state.last_scan
     scan_time = datetime.datetime.now(datetime.timezone.utc)
 
-    movies = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])['movies']
-    for movie in movies:
+    response = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])
+    for movie in response['movies']:
         if _need_refresh_movie(movie['file'], last_scan):
             _jsonrpc('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
 
-    tv_shows = _jsonrpc('VideoLibrary.GetTVShows', properties=['file'])['tvshows']
-    for tv_show in tv_shows:
+    response = _jsonrpc('VideoLibrary.GetTVShows', properties=['file'])
+    for tv_show in response['tvshows']:
         if _need_refresh_tv_show(tv_show['file'], last_scan):
             _jsonrpc('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
 
-    episodes = _jsonrpc('VideoLibrary.GetEpisodes', properties=['file'])['episodes']
-    for episode in episodes:
+    response = _jsonrpc('VideoLibrary.GetEpisodes', properties=['file'])
+    for episode in response['episodes']:
         if _need_refresh_episode(episode['file'], last_scan):
             _jsonrpc('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
