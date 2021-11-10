@@ -70,7 +70,7 @@ class Settings:
         _last_scan = 'state.last_scan'
 
         @property
-        def last_scan(self) -> Optional[datetime]:
+        def last_scan(self) -> Optional[datetime.datetime]:
             iso_string = self._addon.getSetting(self._last_scan)
             if iso_string == '':
                 return None
@@ -81,5 +81,5 @@ class Settings:
             return last_scan
 
         @last_scan.setter
-        def last_scan(self, value: datetime):
+        def last_scan(self, value: datetime.datetime):
             self._addon.setSetting(self._last_scan, value.isoformat(timespec='seconds'))

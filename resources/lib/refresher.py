@@ -47,7 +47,7 @@ def refresh(clean: bool = False, scan: bool = False, continuation: bool = False)
         _jsonrpc('VideoLibrary.Scan', showdialogs=False)
 
 
-def _file_warrants_refresh(file: str, last_scan: datetime) -> bool:
+def _file_warrants_refresh(file: str, last_scan: datetime.datetime) -> bool:
     if not xbmcvfs.exists(file):
         return False
     stats = xbmcvfs.Stat(file)
@@ -68,7 +68,7 @@ def _jsonrpc(method: str, **params):
     return json.loads(result)['result']
 
 
-def _need_refresh_episode(file: str, last_scan: datetime) -> bool:
+def _need_refresh_episode(file: str, last_scan: datetime.datetime) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
@@ -77,7 +77,7 @@ def _need_refresh_episode(file: str, last_scan: datetime) -> bool:
     return _file_warrants_refresh(filename_nfo, last_scan)
 
 
-def _need_refresh_movie(file: str, last_scan: datetime) -> bool:
+def _need_refresh_movie(file: str, last_scan: datetime.datetime) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
@@ -96,7 +96,7 @@ def _need_refresh_movie(file: str, last_scan: datetime) -> bool:
     return False
 
 
-def _need_refresh_tv_show(file: str, last_scan: datetime) -> bool:
+def _need_refresh_tv_show(file: str, last_scan: datetime.datetime) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
