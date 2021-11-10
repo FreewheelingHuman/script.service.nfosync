@@ -1,8 +1,9 @@
-import datetime
+# import datetime
+from typing import Optional
 
 import xbmcaddon
 
-from typing import Optional
+import resources.lib.utcdt as utcdt
 
 
 class Settings:
@@ -70,16 +71,15 @@ class Settings:
         _last_scan = 'state.last_scan'
 
         @property
-        def last_scan(self) -> Optional[datetime.datetime]:
+        def last_scan(self) -> Optional[utcdt.Dt]:
             iso_string = self._addon.getSetting(self._last_scan)
             if iso_string == '':
                 return None
 
-            last_scan = datetime.datetime.fromisoformat(iso_string)
-            last_scan.replace(tzinfo=datetime.timezone.utc)
+            last_scan = utcdt.fromisoformat(iso_string)
 
             return last_scan
 
         @last_scan.setter
-        def last_scan(self, value: datetime.datetime):
+        def last_scan(self, value: utcdt.Dt):
             self._addon.setSetting(self._last_scan, value.isoformat(timespec='seconds'))

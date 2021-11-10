@@ -1,10 +1,10 @@
-import datetime
 import json
 import os
 
 import xbmc
 import xbmcvfs
 
+import resources.lib.utcdt as utcdt
 from resources.lib.settings import Settings
 
 
@@ -23,7 +23,7 @@ def refresh(clean: bool = False, scan: bool = False, continuation: bool = False)
         return
 
     last_scan = settings.state.last_scan
-    scan_time = datetime.datetime.now(datetime.timezone.utc)
+    scan_time = utcdt.now()
 
     response = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])
     for movie in response['movies']:
@@ -47,11 +47,13 @@ def refresh(clean: bool = False, scan: bool = False, continuation: bool = False)
         _jsonrpc('VideoLibrary.Scan', showdialogs=False)
 
 
-def _file_warrants_refresh(file: str, last_scan: datetime.datetime) -> bool:
+def _file_warrants_refresh(file: str, last_scan: utcdt.Dt) -> bool:
     if not xbmcvfs.exists(file):
         return False
+
     stats = xbmcvfs.Stat(file)
-    last_modified = datetime.datetime.fromtimestamp(stats.st_mtime(), datetime.timezone.utc)
+    last_modified = utcdt.fromtimestamp(stats.st_mtime())
+
     if last_modified > last_scan:
         return True
     return False
@@ -68,7 +70,7 @@ def _jsonrpc(method: str, **params):
     return json.loads(result)['result']
 
 
-def _need_refresh_episode(file: str, last_scan: datetime.datetime) -> bool:
+def _need_refresh_episode(file: str, last_scan: utcdt.Dt) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
@@ -77,7 +79,7 @@ def _need_refresh_episode(file: str, last_scan: datetime.datetime) -> bool:
     return _file_warrants_refresh(filename_nfo, last_scan)
 
 
-def _need_refresh_movie(file: str, last_scan: datetime.datetime) -> bool:
+def _need_refresh_movie(file: str, last_scan: utcdt.Dt) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
@@ -96,7 +98,7 @@ def _need_refresh_movie(file: str, last_scan: datetime.datetime) -> bool:
     return False
 
 
-def _need_refresh_tv_show(file: str, last_scan: datetime.datetime) -> bool:
+def _need_refresh_tv_show(file: str, last_scan: utcdt.Dt) -> bool:
     # Ignore missing files
     if not xbmcvfs.exists(file):
         return False
