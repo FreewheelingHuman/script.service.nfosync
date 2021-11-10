@@ -1,10 +1,9 @@
-import json
 import os
 
-import xbmc
 import xbmcvfs
 
 import resources.lib.utcdt as utcdt
+import resources.lib.jsonrpc as jsonrpc
 from resources.lib.settings import Settings
 
 
@@ -20,32 +19,32 @@ def refresh(clean: bool = False, scan: bool = False, continuation: bool = False)
     # without the clean once the monitor sees that the clean is completed.
     if clean:
         settings.in_progress.scan = scan
-        _jsonrpc('VideoLibrary.Clean', showdialogs=False)
+        jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
         return
 
     last_scan = settings.state.last_scan
     scan_time = utcdt.now()
 
-    response = _jsonrpc('VideoLibrary.GetMovies', properties=['file'])
+    response = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
     for movie in response['movies']:
         if _need_refresh_movie(movie['file'], last_scan):
-            _jsonrpc('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
+            jsonrpc.request('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
 
-    response = _jsonrpc('VideoLibrary.GetTVShows', properties=['file'])
+    response = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
     for tv_show in response['tvshows']:
         if _need_refresh_tv_show(tv_show['file'], last_scan):
-            _jsonrpc('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
+            jsonrpc.request('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
 
-    response = _jsonrpc('VideoLibrary.GetEpisodes', properties=['file'])
+    response = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
     for episode in response['episodes']:
         if _need_refresh_episode(episode['file'], last_scan):
-            _jsonrpc('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
+            jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
     settings.state.last_scan = scan_time
     settings.in_progress.active = False
 
     if scan:
-        _jsonrpc('VideoLibrary.Scan', showdialogs=False)
+        jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
 
 
 def _file_warrants_refresh(file: str, last_scan: utcdt.Dt) -> bool:
@@ -58,17 +57,6 @@ def _file_warrants_refresh(file: str, last_scan: utcdt.Dt) -> bool:
     if last_modified > last_scan:
         return True
     return False
-
-
-def _jsonrpc(method: str, **params):
-    request = {
-        'jsonrpc': '2.0',
-        'method': method,
-        'params': params,
-        'id': 1
-    }
-    result = xbmc.executeJSONRPC(json.dumps(request))
-    return json.loads(result)['result']
 
 
 def _need_refresh_episode(file: str, last_scan: utcdt.Dt) -> bool:

@@ -1,4 +1,3 @@
-# import datetime
 from typing import Optional
 
 import xbmcaddon
@@ -10,6 +9,9 @@ class Settings:
 
     def __init__(self):
         self._addon = xbmcaddon.Addon()
+
+        self.addon_id: str = self._addon.getAddonInfo('id')
+
         self.manual = self.Manual(self._addon)
         self.start = self.Start(self._addon)
         self.in_progress = self.InProgress(self._addon)

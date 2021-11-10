@@ -1,5 +1,8 @@
+import json
+
 import xbmc
 
+import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
 from resources.lib.refresher import refresh
 from resources.lib.settings import Settings
@@ -25,7 +28,12 @@ class Service(xbmc.Monitor):
 
     def onCleanFinished(self, library: str) -> None:
         if library == 'video' and self._settings.in_progress.active:
-            refresh(clean=self._settings.in_progress.clean, continuation=True)
+            refresh(clean=self._settings.in_progress.clean, scan=self._settings.in_progress.scan, continuation=True)
+
+    def onNotification(self, sender: str, method: str, data: str) -> None:
+        if sender == self._settings.addon_id and method == jsonrpc.custom_methods.refresh.recv:
+            options = json.loads(data)
+            refresh(clean=options['clean'], scan=options['scan'])
 
 
 if __name__ == "__main__":

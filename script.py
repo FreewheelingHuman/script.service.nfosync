@@ -1,6 +1,11 @@
-from resources.lib.refresher import refresh
+import resources.lib.jsonrpc as jsonrpc
 from resources.lib.settings import Settings
 
 
 settings = Settings()
-refresh(clean=settings.manual.clean, scan=settings.manual.scan)
+jsonrpc.request(
+    'JSONRPC.NotifyAll',
+    sender=settings.addon_id,
+    message=jsonrpc.custom_methods.refresh.send,
+    data={'clean': settings.manual.clean, 'scan': settings.manual.scan}
+)
