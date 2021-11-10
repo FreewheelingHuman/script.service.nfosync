@@ -1,47 +1,47 @@
 <?xml version="1.0" ?>
 <settings version="1">
-	<section id="script.service.nfosync">
-		<category id="manual" label="32001">
-			<group id="1" label="32005">
-				<setting id="manual.clean" type="boolean" label="32002" help="">
-					<level>3</level>
-					<default>false</default>
-					<control type="toggle" />
-				</setting>
-				<setting id="manual.scan" type="boolean" label="32009" help="">
-					<level>0</level>
-					<default>true</default>
-					<control type="toggle" />
-				</setting>
-			</group>
-		</category>
-		<category id="on_start" label="32004">
-			<group id="2" label="32005">
-				<setting id="on_start.clean" type="boolean" label="32002" help="">
-					<level>3</level>
-					<default>false</default>
-					<control type="toggle" />
-				</setting>
-				<setting id="on_start.scan" type="boolean" label="32009" help="">
-					<level>0</level>
-					<default>true</default>
-					<control type="toggle" />
-				</setting>
-			</group>
-		</category>
-		<category id="state" label="32006" help="">
-			<group id="5" label="32006">
-				<setting id="state.last_scan" type="string" label="32007" help="">
-					<level>4</level>
-					<default/>
-					<constraints>
-						<allowempty>true</allowempty>
-					</constraints>
-					<control type="edit" format="string">
-						<heading>32007</heading>
-					</control>
-				</setting>
-			</group>
-		</category>
-	</section>
+    <section id="script.service.nfosync">
+        <category id="manual" label="32001">
+            <group id="1" label="32005">
+                <setting id="manual.clean" type="boolean" label="32002" help="">
+                    <level>3</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="manual.scan" type="boolean" label="32009" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+        </category>
+        <category id="on_start" label="32004">
+            <group id="2" label="32005">
+                <setting id="on_start.clean" type="boolean" label="32002" help="">
+                    <level>3</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="on_start.scan" type="boolean" label="32009" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+        </category>
+        <category id="state" label="32006" help="">
+            <group id="5" label="32006">
+                <setting id="state.last_scan" type="string" label="32007" help="">
+                    <level>4</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>32007</heading>
+                    </control>
+                </setting>
+            </group>
+        </category>
+    </section>
 </settings>
