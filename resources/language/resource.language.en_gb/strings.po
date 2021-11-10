@@ -1,10 +1,10 @@
 # Kodi Media Center language file
-# Addon Name: Autorefresh
-# Addon id: script.service.autorefresh
+# Addon Name: NFO Sync
+# Addon id: script.service.nfosync
 # Addon Provider: FreewheelingHuman
 msgid ""
 msgstr ""
-"Project-Id-Version: Autorefresh\n"
+"Project-Id-Version: NFO Sync\n"
 "POT-Creation-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Language-Team: \n"
