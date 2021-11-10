@@ -19,6 +19,7 @@ def refresh(clean: bool = False, scan: bool = False, continuation: bool = False)
     # In order to let clean finish first, we hop out and then run again
     # without the clean once the monitor sees that the clean is completed.
     if clean:
+        settings.in_progress.scan = scan
         _jsonrpc('VideoLibrary.Clean', showdialogs=False)
         return
 
