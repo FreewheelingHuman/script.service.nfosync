@@ -19,7 +19,7 @@ class Service(xbmc.Monitor):
         # Clear the in progress status so if a run didn't finish, a restart will at least fix it
         self._settings.in_progress.active = False
 
-        refresh(clean=self._settings.start.clean)
+        refresh(clean=self._settings.start.clean, scan=self._settings.start.scan)
 
         while not self.abortRequested():
             self.waitForAbort(100)

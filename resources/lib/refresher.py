@@ -8,7 +8,7 @@ import xbmcvfs
 from resources.lib.settings import Settings
 
 
-def refresh(clean: bool = False, continuation: bool = False) -> None:
+def refresh(clean: bool = False, scan: bool = False, continuation: bool = False) -> None:
     settings = Settings()
 
     # Prevent multiple refreshes from running simultaneously
@@ -42,6 +42,9 @@ def refresh(clean: bool = False, continuation: bool = False) -> None:
 
     settings.state.last_scan = scan_time
     settings.in_progress.active = False
+
+    if scan:
+        _jsonrpc('VideoLibrary.Scan', showdialogs=False)
 
 
 def _file_warrants_refresh(file: str, last_scan: datetime) -> bool:

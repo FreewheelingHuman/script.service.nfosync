@@ -20,6 +20,7 @@ class Settings:
 
     class ActionGroup(SubGroup):
         _clean = None
+        _scan = None
 
         @property
         def clean(self) -> bool:
@@ -29,14 +30,25 @@ class Settings:
         def clean(self, value: bool) -> None:
             self._addon.setSettingBool(self._clean, value)
 
+        @property
+        def scan(self) -> bool:
+            return self._addon.getSettingBool(self._scan)
+
+        @scan.setter
+        def scan(self, value: bool) -> None:
+            self._addon.setSettingBool(self._scan, value)
+
     class Manual(ActionGroup):
         _clean = 'manual.clean'
+        _scan = 'manual.scan'
 
     class Start(ActionGroup):
         _clean = 'on_start.clean'
+        _scan = 'on_start.scan'
 
     class InProgress(ActionGroup):
         _active = 'in_progress.active'
+        _scan = 'in_progress.scan'
 
         @property
         def active(self) -> bool:

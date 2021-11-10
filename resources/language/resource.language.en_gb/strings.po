@@ -45,3 +45,7 @@ msgstr ""
 msgctxt "#32008"
 msgid "Active refresh?"
 msgstr ""
+
+msgctxt "#32009"
+msgid "Scan for new files"
+msgstr ""

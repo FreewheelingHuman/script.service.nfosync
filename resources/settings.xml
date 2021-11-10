@@ -8,6 +8,11 @@
 					<default>false</default>
 					<control type="toggle" />
 				</setting>
+				<setting id="manual.scan" type="boolean" label="32009" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle" />
+				</setting>
 			</group>
 		</category>
 		<category id="on_start" label="32004">
@@ -17,6 +22,11 @@
 					<default>false</default>
 					<control type="toggle" />
 				</setting>
+				<setting id="on_start.scan" type="boolean" label="32009" help="">
+					<level>0</level>
+					<default>true</default>
+					<control type="toggle" />
+				</setting>
 			</group>
 		</category>
 		<category id="in_progress" label="32003" help="">
@@ -24,6 +34,11 @@
 				<setting id="in_progress.active" type="boolean" label="32008" help="">
 					<level>4</level>
 					<default>false</default>
+					<control type="toggle" />
+				</setting>
+				<setting id="in_progress.scan" type="boolean" label="32009" help="">
+					<level>4</level>
+					<default>true</default>
 					<control type="toggle" />
 				</setting>
 			</group>
