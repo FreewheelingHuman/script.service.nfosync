@@ -22,9 +22,7 @@ msgctxt "#32002"
 msgid "Clean library"
 msgstr ""
 
-msgctxt "#32003"
-msgid "In Progress"
-msgstr ""
+# 32003 - original use deleted, currently unused
 
 msgctxt "#32004"
 msgid "Refresh On Start"

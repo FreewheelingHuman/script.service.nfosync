@@ -14,7 +14,7 @@ class Settings:
 
         self.manual = self._Manual(self._addon)
         self.start = self._Start(self._addon)
-        self.in_progress = self._InProgress(self._addon)
+        self.in_progress = self._InProgress()
         self.state = self._State(self._addon)
 
     class _SubGroup:
@@ -49,25 +49,14 @@ class Settings:
         _clean = 'on_start.clean'
         _scan = 'on_start.scan'
 
-    class _InProgress(_ActionGroup):
-        _active = 'in_progress.active'
-        _scan = 'in_progress.scan'
-
-        @property
-        def active(self) -> bool:
-            return self._addon.getSettingBool(self._active)
-
-        @active.setter
-        def active(self, value: bool):
-            self._addon.setSettingBool(self._active, value)
+    class _InProgress:
+        def __init__(self):
+            self.active = False
+            self.scan = False
 
         @property
         def clean(self) -> bool:
             return False
-
-        @clean.setter
-        def clean(self, value: bool):
-            raise RuntimeError('Clean value cannot be set for the in_progress action group.')
 
     class _State(_SubGroup):
         _last_scan = 'state.last_scan'
