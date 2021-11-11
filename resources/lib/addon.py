@@ -41,12 +41,24 @@ class Settings:
         def scan(self, value: bool) -> None:
             ADDON.setSettingBool(self._scan, value)
 
+    class _SwitchableActionGroup(_ActionGroup):
+        _enabled = None
+
+        @property
+        def enabled(self) -> bool:
+            return ADDON.getSettingBool(self._enabled)
+
+        @enabled.setter
+        def enabled(self, value):
+            ADDON.setSettingBool(self._enabled)
+
     class _Manual(_ActionGroup):
         _clean = 'manual.clean'
         _refresh = 'manual.refresh'
         _scan = 'manual.scan'
 
-    class _Start(_ActionGroup):
+    class _Start(_SwitchableActionGroup):
+        _enabled = 'on_start.enabled'
         _clean = 'on_start.clean'
         _refresh = 'on_start.refresh'
         _scan = 'on_start.scan'
