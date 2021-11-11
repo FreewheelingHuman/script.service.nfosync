@@ -6,7 +6,7 @@ import xbmcvfs
 
 import resources.lib.utcdt as utcdt
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.addon import SETTINGS
+from resources.lib.addon import ADDON, SETTINGS
 
 
 class Importer:
@@ -110,8 +110,8 @@ class Importer:
         return self._file_warrants_refresh(tv_show_nfo, last_scan)
 
     def _update_dialog(self, message_num: int):
-        heading = xbmc.getLocalizedString(32011)
-        message = xbmc.getLocalizedString(message_num)
+        heading = ADDON.getLocalizedString(32011)
+        message = ADDON.getLocalizedString(message_num)
 
         if self._progress_bar_up:
             self._progress_bar.update(0, heading, message)
