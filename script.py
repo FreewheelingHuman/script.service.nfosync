@@ -7,6 +7,7 @@ jsonrpc.request(
     sender=ADDON_ID,
     message=jsonrpc.custom_methods.refresh.send,
     data={
+        'visible': SETTINGS.manual.visible,
         'clean': SETTINGS.manual.clean,
         'refresh': SETTINGS.manual.refresh,
         'scan': SETTINGS.manual.scan

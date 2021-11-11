@@ -9,7 +9,8 @@ from resources.lib.addon import ADDON, SETTINGS
 
 
 class Importer:
-    def __init__(self, clean: bool, refresh: bool, scan: bool):
+    def __init__(self, visible: bool, clean: bool, refresh: bool, scan: bool):
+        self._visible = visible
         self._todo_clean = clean
         self._todo_refresh = refresh
         self._todo_scan = scan
@@ -21,8 +22,9 @@ class Importer:
             self._running = False
             return
 
-        self._progress_bar = xbmcgui.DialogProgressBG()
-        self._progress_bar_up = False
+        if self._visible:
+            self._progress_bar = xbmcgui.DialogProgressBG()
+            self._progress_bar_up = False
 
         self.resume()
 
@@ -134,11 +136,17 @@ class Importer:
         return self._file_warrants_refresh(tv_show_nfo, last_scan)
 
     def _close_dialog(self) -> None:
+        if not self._visible:
+            return
+
         if self._progress_bar_up:
             self._progress_bar.close()
             self._progress_bar_up = False
 
     def _update_dialog(self, message_num: int) -> None:
+        if not self._visible:
+            return
+
         heading = ADDON.getLocalizedString(32011)
         message = ADDON.getLocalizedString(message_num)
 

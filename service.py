@@ -20,6 +20,7 @@ class Service(xbmc.Monitor):
 
         if SETTINGS.start.enabled:
             self._importer = Importer(
+                visible=SETTINGS.start.visible,
                 clean=SETTINGS.start.clean,
                 refresh=SETTINGS.start.refresh,
                 scan=SETTINGS.start.scan
@@ -36,6 +37,7 @@ class Service(xbmc.Monitor):
         if not self._importer_running and method == jsonrpc.custom_methods.refresh.recv:
             options = json.loads(data)
             self._importer = Importer(
+                visible=options['visible'],
                 clean=options['clean'],
                 refresh=options['refresh'],
                 scan=options['scan'])
