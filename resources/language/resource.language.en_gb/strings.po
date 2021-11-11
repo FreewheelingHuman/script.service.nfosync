@@ -22,7 +22,9 @@ msgctxt "#32002"
 msgid "Clean library"
 msgstr ""
 
-# 32003 - original use deleted, currently unused
+msgctxt "#32004"
+msgid "NFO Sync: Cleaning"
+msgstr ""
 
 msgctxt "#32004"
 msgid "Refresh On Start"
@@ -46,4 +48,8 @@ msgstr ""
 
 msgctxt "#32009"
 msgid "Scan for new files"
+msgstr ""
+
+msgctxt "#32010"
+msgid "NFO Sync: Updating"
 msgstr ""

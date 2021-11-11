@@ -14,7 +14,6 @@ class Settings:
 
         self.manual = self._Manual(self._addon)
         self.start = self._Start(self._addon)
-        self.in_progress = self._InProgress()
         self.state = self._State(self._addon)
 
     class _SubGroup:
@@ -48,15 +47,6 @@ class Settings:
     class _Start(_ActionGroup):
         _clean = 'on_start.clean'
         _scan = 'on_start.scan'
-
-    class _InProgress:
-        def __init__(self):
-            self.active = False
-            self.scan = False
-
-        @property
-        def clean(self) -> bool:
-            return False
 
     class _State(_SubGroup):
         _last_scan = 'state.last_scan'

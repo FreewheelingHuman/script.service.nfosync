@@ -1,5 +1,7 @@
 import os
 
+import xbmc
+import xbmcgui
 import xbmcvfs
 
 import resources.lib.utcdt as utcdt
@@ -7,90 +9,110 @@ import resources.lib.jsonrpc as jsonrpc
 from resources.lib.settings import Settings
 
 
-def refresh(clean: bool = False, scan: bool = False, continuation: bool = False) -> None:
-    settings = Settings()
+class Refresher:
+    def __init__(self, clean: bool = False, scan: bool = False):
+        self._clean = clean
+        self._scan = scan
+        self._settings = Settings()
+        self._running = True
 
-    # Prevent multiple refreshes from running simultaneously
-    if settings.in_progress.active and not continuation:
-        return
-    settings.in_progress.active = True
+        self._progress_bar = xbmcgui.DialogProgressBG()
+        self._progress_bar_up = False
 
-    # In order to let clean finish first, we hop out and then run again
-    # without the clean once the monitor sees that the clean is completed.
-    if clean:
-        settings.in_progress.scan = scan
-        jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
-        return
+        if self._clean:
+            self._update_dialog(xbmc.getLocalizedString(32003))
+            jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
+            return
 
-    last_scan = settings.state.last_scan
-    scan_time = utcdt.now()
+        self.resume()
 
-    response = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
-    for movie in response['movies']:
-        if _need_refresh_movie(movie['file'], last_scan):
-            jsonrpc.request('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
+    def resume(self):
+        self._update_dialog(xbmc.getLocalizedString(32010))
 
-    response = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
-    for tv_show in response['tvshows']:
-        if _need_refresh_tv_show(tv_show['file'], last_scan):
-            jsonrpc.request('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
+        last_scan = self._settings.state.last_scan
+        scan_time = utcdt.now()
 
-    response = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
-    for episode in response['episodes']:
-        if _need_refresh_episode(episode['file'], last_scan):
-            jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
+        response = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
+        for movie in response['movies']:
+            if self._need_refresh_movie(movie['file'], last_scan):
+                jsonrpc.request('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
 
-    settings.state.last_scan = scan_time
-    settings.in_progress.active = False
+        response = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
+        for tv_show in response['tvshows']:
+            if self._need_refresh_tv_show(tv_show['file'], last_scan):
+                jsonrpc.request('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
 
-    if scan:
-        jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
+        response = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
+        for episode in response['episodes']:
+            if self._need_refresh_episode(episode['file'], last_scan):
+                jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
+        self._settings.state.last_scan = scan_time
 
-def _file_warrants_refresh(file: str, last_scan: utcdt.Dt) -> bool:
-    if not xbmcvfs.exists(file):
+        self._close_dialog()
+
+        if self._scan:
+            jsonrpc.request('VideoLibrary.Scan', showdialogs=True)
+
+        self._running = False
+
+    @property
+    def running(self):
+        return self._running
+
+    def _close_dialog(self):
+        if self._progress_bar_up:
+            self._progress_bar.close()
+            self._progress_bar_up = False
+
+    def _file_warrants_refresh(self, file: str, last_scan: utcdt.Dt) -> bool:
+        if not xbmcvfs.exists(file):
+            return False
+
+        stats = xbmcvfs.Stat(file)
+        last_modified = utcdt.fromtimestamp(stats.st_mtime())
+
+        if last_modified > last_scan:
+            return True
         return False
 
-    stats = xbmcvfs.Stat(file)
-    last_modified = utcdt.fromtimestamp(stats.st_mtime())
+    def _need_refresh_episode(self, file: str, last_scan: utcdt.Dt) -> bool:
+        # Ignore missing files
+        if not xbmcvfs.exists(file):
+            return False
 
-    if last_modified > last_scan:
-        return True
-    return False
+        filename_nfo = os.path.splitext(file)[0] + '.nfo'
+        return self._file_warrants_refresh(filename_nfo, last_scan)
 
+    def _need_refresh_movie(self, file: str, last_scan: utcdt.Dt) -> bool:
+        # Ignore missing files
+        if not xbmcvfs.exists(file):
+            return False
 
-def _need_refresh_episode(file: str, last_scan: utcdt.Dt) -> bool:
-    # Ignore missing files
-    if not xbmcvfs.exists(file):
+        if self._file_warrants_refresh(file, last_scan):
+            return True
+
+        filename_nfo = os.path.splitext(file)[0] + '.nfo'
+        if self._file_warrants_refresh(filename_nfo, last_scan):
+            return True
+
+        movie_nfo = os.path.join(os.path.dirname(file), 'movie.nfo')
+        if self._file_warrants_refresh(movie_nfo, last_scan):
+            return True
+
         return False
 
-    filename_nfo = os.path.splitext(file)[0] + '.nfo'
-    return _file_warrants_refresh(filename_nfo, last_scan)
+    def _need_refresh_tv_show(self, file: str, last_scan: utcdt.Dt) -> bool:
+        # Ignore missing files
+        if not xbmcvfs.exists(file):
+            return False
 
+        tv_show_nfo = os.path.join(file, 'tvshow.nfo')
+        return self._file_warrants_refresh(tv_show_nfo, last_scan)
 
-def _need_refresh_movie(file: str, last_scan: utcdt.Dt) -> bool:
-    # Ignore missing files
-    if not xbmcvfs.exists(file):
-        return False
-
-    if _file_warrants_refresh(file, last_scan):
-        return True
-
-    filename_nfo = os.path.splitext(file)[0] + '.nfo'
-    if _file_warrants_refresh(filename_nfo, last_scan):
-        return True
-
-    movie_nfo = os.path.join(os.path.dirname(file), 'movie.nfo')
-    if _file_warrants_refresh(movie_nfo, last_scan):
-        return True
-
-    return False
-
-
-def _need_refresh_tv_show(file: str, last_scan: utcdt.Dt) -> bool:
-    # Ignore missing files
-    if not xbmcvfs.exists(file):
-        return False
-
-    tv_show_nfo = os.path.join(file, 'tvshow.nfo')
-    return _file_warrants_refresh(tv_show_nfo, last_scan)
+    def _update_dialog(self, heading: str):
+        if self._progress_bar_up:
+            self._progress_bar.update(0, heading)
+        else:
+            self._progress_bar.create(heading)
+            self._progress_bar_up = True
