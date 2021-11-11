@@ -1,6 +1,5 @@
 import os
 
-import xbmc
 import xbmcgui
 import xbmcvfs
 
@@ -36,24 +35,22 @@ class Importer:
         return self._running
 
     def resume(self) -> None:
-        xbmc.log('LOOKIT: resume')
-
         if self._todo_clean:
-            self._todo_clean = False
             self._update_dialog(32003)
+            self._todo_clean = False
             self._clean()
             self._awaiting = 'VideoLibrary.OnCleanFinished'
             return
 
         if self._todo_refresh:
-            self._todo_refresh = False
             self._update_dialog(32010)
+            self._todo_refresh = False
             self._refresh()
             self._awaiting = ''
 
         if self._todo_scan:
-            self._todo_scan = False
             self._update_dialog(32012)
+            self._todo_scan = False
             self._scan()
             self._awaiting = 'VideoLibrary.OnScanFinished'
             return
@@ -63,11 +60,9 @@ class Importer:
 
     @staticmethod
     def _clean() -> None:
-        xbmc.log('LOOKIT: clean')
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
 
     def _refresh(self) -> None:
-        xbmc.log('LOOKIT: refresh')
         last_scan = SETTINGS.state.last_refresh
         scan_time = utcdt.now()
 
@@ -90,7 +85,6 @@ class Importer:
 
     @staticmethod
     def _scan() -> None:
-        xbmc.log('LOOKIT: scan')
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
 
     def _close_dialog(self) -> None:
@@ -149,7 +143,9 @@ class Importer:
         message = ADDON.getLocalizedString(message_num)
 
         if self._progress_bar_up:
-            self._progress_bar.update(0, heading, message)
+            stages_to_go = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
+            progress = int((1 - (stages_to_go / self._stages)) * 100)
+            self._progress_bar.update(progress, heading, message)
         else:
             self._progress_bar.create(heading, message)
             self._progress_bar_up = True
