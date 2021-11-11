@@ -138,7 +138,7 @@ class Importer:
             self._progress_bar.close()
             self._progress_bar_up = False
 
-    def _update_dialog(self, message_num: int):
+    def _update_dialog(self, message_num: int) -> None:
         heading = ADDON.getLocalizedString(32011)
         message = ADDON.getLocalizedString(message_num)
 
