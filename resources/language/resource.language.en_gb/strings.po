@@ -73,3 +73,31 @@ msgstr ""
 msgctxt "#32015"
 msgid "Show background progress indicator"
 msgstr ""
+
+msgctxt "#32016"
+msgid "Periodic Import"
+msgstr ""
+
+msgctxt "#32017"
+msgid "How often to import in hours"
+msgstr ""
+
+msgctxt "#32018"
+msgid "Enable/Disable"
+msgstr ""
+
+msgctxt "#32019"
+msgid "Period Options"
+msgstr ""
+
+msgctxt "#32020"
+msgid "Don't import while media is playing"
+msgstr ""
+
+msgctxt "#32021"
+msgid "Minutes after playing to wait"
+msgstr ""
+
+msgctxt "#32022"
+msgid "Set to 0 to import as soon as playing stops"
+msgstr ""

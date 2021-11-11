@@ -66,6 +66,91 @@
                 </setting>
             </group>
         </category>
+        <category id="periodic" label="32016">
+            <group id="3" label="32018">
+                <setting id="periodic.enabled" type="boolean" label="32014" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+            <group id="4" label="32019">
+                <setting id="periodic.period" type="integer" label="32017" help="">
+                   	<level>0</level>
+                    <default>2</default>
+                    <constraints>
+                        <minimum>1</minimum>
+                        <step>1</step>
+                        <maximum>24</maximum>
+                    </constraints>
+                    <control type="spinner" format="integer">
+		                <heading>32017</heading>
+	                </control>
+                    <dependencies>
+	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="periodic.avoidplay" type="boolean" label="32020" help="">
+                   	<level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="periodic.waitafterplay" type="integer"
+                         label="32021" help="32022" parent="periodic.avoidplay">
+                   	<level>0</level>
+                    <default>10</default>
+                    <constraints>
+                        <minimum>0</minimum>
+                        <step>1</step>
+                        <maximum>300</maximum>
+                    </constraints>
+	                <control type="edit" format="integer">
+		                <heading>32021</heading>
+	                </control>
+                    <dependencies>
+	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+                        <dependency type="enable" setting="periodic.avoidplay">true</dependency>
+                    </dependencies>
+                </setting>
+            </group>
+            <group id="6" label="32005">
+                <setting id="periodic.visible" type="boolean" label="32015" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="periodic.clean" type="boolean" label="32002" help="">
+                    <level>3</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="periodic.refresh" type="boolean" label="32013" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="periodic.scan" type="boolean" label="32009" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+                    </dependencies>
+                </setting>
+            </group>
+        </category>
         <category id="state" label="32006" help="">
             <group id="5" label="32006">
                 <setting id="state.last_refresh" type="string" label="32007" help="">
