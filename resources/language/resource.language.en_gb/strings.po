@@ -22,7 +22,7 @@ msgctxt "#32002"
 msgid "Clean missing items from library"
 msgstr ""
 
-msgctxt "#32004"
+msgctxt "#32003"
 msgid "Cleaning"
 msgstr ""
 
