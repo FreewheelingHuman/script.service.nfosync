@@ -65,3 +65,7 @@ msgstr ""
 msgctxt "#32013"
 msgid "Refresh externally updated library items"
 msgstr ""
+
+msgctxt "#32014"
+msgid "Automatically import when Kodi starts"
+msgstr ""

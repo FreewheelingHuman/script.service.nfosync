@@ -22,20 +22,34 @@
         </category>
         <category id="on_start" label="32004">
             <group id="2" label="32005">
-                <setting id="on_start.clean" type="boolean" label="32002" help="">
+                <setting id="on_start.enabled" type="boolean" label="32014" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="on_start.clean" type="boolean" label="32002" help="" parent="on_start.enabled">
                     <level>3</level>
                     <default>false</default>
                     <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="on_start.enabled">true</dependency>
+                    </dependencies>
                 </setting>
-                <setting id="on_start.refresh" type="boolean" label="32013" help="">
+                <setting id="on_start.refresh" type="boolean" label="32013" help="" parent="on_start.enabled">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="on_start.enabled">true</dependency>
+                    </dependencies>
                 </setting>
-                <setting id="on_start.scan" type="boolean" label="32009" help="">
+                <setting id="on_start.scan" type="boolean" label="32009" help="" parent="on_start.enabled">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="on_start.enabled">true</dependency>
+                    </dependencies>
                 </setting>
             </group>
         </category>
