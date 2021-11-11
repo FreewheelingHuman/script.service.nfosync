@@ -18,11 +18,12 @@ class Service(xbmc.Monitor):
         if SETTINGS.state.last_refresh is None:
             SETTINGS.state.last_refresh = utcdt.now()
 
-        self._importer = Importer(
-            clean=SETTINGS.start.clean,
-            refresh=SETTINGS.start.refresh,
-            scan=SETTINGS.start.scan
-        )
+        if SETTINGS.start.enabled:
+            self._importer = Importer(
+                clean=SETTINGS.start.clean,
+                refresh=SETTINGS.start.refresh,
+                scan=SETTINGS.start.scan
+            )
 
         while not self.abortRequested():
             self.waitForAbort(100)
