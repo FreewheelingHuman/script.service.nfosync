@@ -47,13 +47,17 @@ msgid "Active import?"
 msgstr ""
 
 msgctxt "#32009"
-msgid "Check for new files"
+msgid "Add new files from sources"
 msgstr ""
 
 msgctxt "#32010"
-msgid "Updating"
+msgid "Refreshing"
 msgstr ""
 
 msgctxt "#32011"
 msgid "NFO Sync"
+msgstr ""
+
+msgctxt "#32012"
+msgid "Adding"
 msgstr ""

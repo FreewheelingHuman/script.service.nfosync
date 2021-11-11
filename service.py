@@ -18,20 +18,23 @@ class Service(xbmc.Monitor):
         if SETTINGS.state.last_refresh is None:
             SETTINGS.state.last_refresh = utcdt.now()
 
-        self._importer = Importer(clean=SETTINGS.start.clean, scan=SETTINGS.start.scan)
+        self._importer = Importer(clean=SETTINGS.start.clean, refresh=True, scan=SETTINGS.start.scan)
 
         while not self.abortRequested():
             self.waitForAbort(100)
 
     def onNotification(self, sender: str, method: str, data: str) -> None:
-        if method == 'VideoLibrary.OnCleanFinished' and self._refresher_running:
+        if self._importer_running and method == self._importer.awaiting:
             self._importer.resume()
-        elif method == jsonrpc.custom_methods.refresh.recv and not self._refresher_running:
+            return
+
+        if not self._importer_running and method == jsonrpc.custom_methods.refresh.recv:
             options = json.loads(data)
-            self._importer = Importer(clean=options['clean'], scan=options['scan'])
+            self._importer = Importer(clean=options['clean'], refresh=True, scan=options['scan'])
+            return
 
     @property
-    def _refresher_running(self) -> bool:
+    def _importer_running(self) -> bool:
         if self._importer is None:
             return False
         return self._importer.running

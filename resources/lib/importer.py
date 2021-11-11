@@ -10,24 +10,64 @@ from resources.lib.addon import ADDON, SETTINGS
 
 
 class Importer:
-    def __init__(self, clean: bool = False, scan: bool = False):
-        self._clean = clean
-        self._scan = scan
+    def __init__(self, clean: bool, refresh: bool, scan: bool):
+        self._todo_clean = clean
+        self._todo_refresh = refresh
+        self._todo_scan = scan
+        self._awaiting = ''
         self._running = True
+
+        self._stages = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
+        if self._stages == 0:
+            self._running = False
+            return
 
         self._progress_bar = xbmcgui.DialogProgressBG()
         self._progress_bar_up = False
 
-        if self._clean:
-            self._update_dialog(32003)
-            jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
-            return
-
         self.resume()
 
-    def resume(self):
-        self._update_dialog(32010)
+    @property
+    def awaiting(self) -> str:
+        return self._awaiting
 
+    @property
+    def running(self) -> bool:
+        return self._running
+
+    def resume(self) -> None:
+        xbmc.log('LOOKIT: resume')
+
+        if self._todo_clean:
+            self._todo_clean = False
+            self._update_dialog(32003)
+            self._clean()
+            self._awaiting = 'VideoLibrary.OnCleanFinished'
+            return
+
+        if self._todo_refresh:
+            self._todo_refresh = False
+            self._update_dialog(32010)
+            self._refresh()
+            self._awaiting = ''
+
+        if self._todo_scan:
+            self._todo_scan = False
+            self._update_dialog(32012)
+            self._scan()
+            self._awaiting = 'VideoLibrary.OnScanFinished'
+            return
+
+        self._close_dialog()
+        self._running = False
+
+    @staticmethod
+    def _clean() -> None:
+        xbmc.log('LOOKIT: clean')
+        jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
+
+    def _refresh(self) -> None:
+        xbmc.log('LOOKIT: refresh')
         last_scan = SETTINGS.state.last_refresh
         scan_time = utcdt.now()
 
@@ -48,23 +88,18 @@ class Importer:
 
         SETTINGS.state.last_refresh = scan_time
 
-        self._close_dialog()
+    @staticmethod
+    def _scan() -> None:
+        xbmc.log('LOOKIT: scan')
+        jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
 
-        if self._scan:
-            jsonrpc.request('VideoLibrary.Scan', showdialogs=True)
-
-        self._running = False
-
-    @property
-    def running(self):
-        return self._running
-
-    def _close_dialog(self):
+    def _close_dialog(self) -> None:
         if self._progress_bar_up:
             self._progress_bar.close()
             self._progress_bar_up = False
 
-    def _file_warrants_refresh(self, file: str, last_scan: utcdt.Dt) -> bool:
+    @staticmethod
+    def _file_warrants_refresh(file: str, last_scan: utcdt.Dt) -> bool:
         if not xbmcvfs.exists(file):
             return False
 
