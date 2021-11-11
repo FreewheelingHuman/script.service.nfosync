@@ -21,25 +21,13 @@ class Settings:
         def clean(self) -> bool:
             return ADDON.getSettingBool(self._clean)
 
-        @clean.setter
-        def clean(self, value: bool) -> None:
-            ADDON.setSettingBool(self._clean, value)
-
         @property
         def refresh(self) -> bool:
             return ADDON.getSettingBool(self._refresh)
 
-        @refresh.setter
-        def refresh(self, value: bool) -> None:
-            ADDON.setSettingBool(self._refresh, value)
-
         @property
         def scan(self) -> bool:
             return ADDON.getSettingBool(self._scan)
-
-        @scan.setter
-        def scan(self, value: bool) -> None:
-            ADDON.setSettingBool(self._scan, value)
 
     class _SwitchableActionGroup(_ActionGroup):
         _enabled = None
@@ -47,10 +35,6 @@ class Settings:
         @property
         def enabled(self) -> bool:
             return ADDON.getSettingBool(self._enabled)
-
-        @enabled.setter
-        def enabled(self, value):
-            ADDON.setSettingBool(self._enabled)
 
     class _Manual(_ActionGroup):
         _clean = 'manual.clean'
