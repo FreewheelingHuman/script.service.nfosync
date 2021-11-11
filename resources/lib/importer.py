@@ -87,11 +87,6 @@ class Importer:
     def _scan() -> None:
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
 
-    def _close_dialog(self) -> None:
-        if self._progress_bar_up:
-            self._progress_bar.close()
-            self._progress_bar_up = False
-
     @staticmethod
     def _file_warrants_refresh(file: str, last_scan: utcdt.Dt) -> bool:
         if not xbmcvfs.exists(file):
@@ -137,6 +132,11 @@ class Importer:
 
         tv_show_nfo = os.path.join(file, 'tvshow.nfo')
         return self._file_warrants_refresh(tv_show_nfo, last_scan)
+
+    def _close_dialog(self) -> None:
+        if self._progress_bar_up:
+            self._progress_bar.close()
+            self._progress_bar_up = False
 
     def _update_dialog(self, message_num: int):
         heading = ADDON.getLocalizedString(32011)
