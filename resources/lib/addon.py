@@ -13,9 +13,14 @@ class Settings:
         self.state = self._State()
 
     class _ActionGroup:
+        _visible = None
         _clean = None
         _refresh = None
         _scan = None
+
+        @property
+        def visible(self) -> bool:
+            return ADDON.getSettingBool(self._visible)
 
         @property
         def clean(self) -> bool:
@@ -37,12 +42,14 @@ class Settings:
             return ADDON.getSettingBool(self._enabled)
 
     class _Manual(_ActionGroup):
+        _visible = 'manual.visible'
         _clean = 'manual.clean'
         _refresh = 'manual.refresh'
         _scan = 'manual.scan'
 
     class _Start(_SwitchableActionGroup):
         _enabled = 'on_start.enabled'
+        _visible = 'on_start.visible'
         _clean = 'on_start.clean'
         _refresh = 'on_start.refresh'
         _scan = 'on_start.scan'
