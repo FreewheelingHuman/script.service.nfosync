@@ -6,5 +6,9 @@ jsonrpc.request(
     'JSONRPC.NotifyAll',
     sender=ADDON_ID,
     message=jsonrpc.custom_methods.refresh.send,
-    data={'clean': SETTINGS.manual.clean, 'scan': SETTINGS.manual.scan}
+    data={
+        'clean': SETTINGS.manual.clean,
+        'refresh': SETTINGS.manual.refresh,
+        'scan': SETTINGS.manual.scan
+    }
 )

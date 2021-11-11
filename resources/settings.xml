@@ -8,6 +8,11 @@
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
+                <setting id="manual.refresh" type="boolean" label="32013" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
                 <setting id="manual.scan" type="boolean" label="32009" help="">
                     <level>0</level>
                     <default>true</default>
@@ -20,6 +25,11 @@
                 <setting id="on_start.clean" type="boolean" label="32002" help="">
                     <level>3</level>
                     <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="on_start.refresh" type="boolean" label="32013" help="">
+                    <level>0</level>
+                    <default>true</default>
                     <control type="toggle" />
                 </setting>
                 <setting id="on_start.scan" type="boolean" label="32009" help="">

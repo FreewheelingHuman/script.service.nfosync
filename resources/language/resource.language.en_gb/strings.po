@@ -61,3 +61,7 @@ msgstr ""
 msgctxt "#32012"
 msgid "Adding"
 msgstr ""
+
+msgctxt "#32013"
+msgid "Refresh externally updated library items"
+msgstr ""

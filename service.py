@@ -18,7 +18,11 @@ class Service(xbmc.Monitor):
         if SETTINGS.state.last_refresh is None:
             SETTINGS.state.last_refresh = utcdt.now()
 
-        self._importer = Importer(clean=SETTINGS.start.clean, refresh=True, scan=SETTINGS.start.scan)
+        self._importer = Importer(
+            clean=SETTINGS.start.clean,
+            refresh=SETTINGS.start.refresh,
+            scan=SETTINGS.start.scan
+        )
 
         while not self.abortRequested():
             self.waitForAbort(100)
@@ -30,7 +34,10 @@ class Service(xbmc.Monitor):
 
         if not self._importer_running and method == jsonrpc.custom_methods.refresh.recv:
             options = json.loads(data)
-            self._importer = Importer(clean=options['clean'], refresh=True, scan=options['scan'])
+            self._importer = Importer(
+                clean=options['clean'],
+                refresh=options['refresh'],
+                scan=options['scan'])
             return
 
     @property

@@ -14,6 +14,7 @@ class Settings:
 
     class _ActionGroup:
         _clean = None
+        _refresh = None
         _scan = None
 
         @property
@@ -25,6 +26,14 @@ class Settings:
             ADDON.setSettingBool(self._clean, value)
 
         @property
+        def refresh(self) -> bool:
+            return ADDON.getSettingBool(self._refresh)
+
+        @refresh.setter
+        def refresh(self, value: bool) -> None:
+            ADDON.setSettingBool(self._refresh, value)
+
+        @property
         def scan(self) -> bool:
             return ADDON.getSettingBool(self._scan)
 
@@ -34,10 +43,12 @@ class Settings:
 
     class _Manual(_ActionGroup):
         _clean = 'manual.clean'
+        _refresh = 'manual.refresh'
         _scan = 'manual.scan'
 
     class _Start(_ActionGroup):
         _clean = 'on_start.clean'
+        _refresh = 'on_start.refresh'
         _scan = 'on_start.scan'
 
     class _State:
