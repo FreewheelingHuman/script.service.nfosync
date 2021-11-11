@@ -3,6 +3,11 @@
     <section id="script.service.nfosync">
         <category id="manual" label="32001">
             <group id="1" label="32005">
+                <setting id="manual.visible" type="boolean" label="32015" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
                 <setting id="manual.clean" type="boolean" label="32002" help="">
                     <level>3</level>
                     <default>false</default>
@@ -26,6 +31,14 @@
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
+                </setting>
+                <setting id="on_start.visible" type="boolean" label="32015" help="" parent="on_start.enabled">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="on_start.enabled">true</dependency>
+                    </dependencies>
                 </setting>
                 <setting id="on_start.clean" type="boolean" label="32002" help="" parent="on_start.enabled">
                     <level>3</level>

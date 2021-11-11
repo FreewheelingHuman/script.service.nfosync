@@ -69,3 +69,7 @@ msgstr ""
 msgctxt "#32014"
 msgid "Automatically import when Kodi starts"
 msgstr ""
+
+msgctxt "#32015"
+msgid "Show background progress indicator"
+msgstr ""
