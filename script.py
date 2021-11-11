@@ -1,11 +1,10 @@
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.settings import Settings
+from resources.lib.addon import ADDON_ID, SETTINGS
 
 
-settings = Settings()
 jsonrpc.request(
     'JSONRPC.NotifyAll',
-    sender=settings.addon_id,
+    sender=ADDON_ID,
     message=jsonrpc.custom_methods.refresh.send,
-    data={'clean': settings.manual.clean, 'scan': settings.manual.scan}
+    data={'clean': SETTINGS.manual.clean, 'scan': SETTINGS.manual.scan}
 )

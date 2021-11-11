@@ -5,21 +5,20 @@ import xbmc
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
 from resources.lib.importer import Importer
-from resources.lib.settings import Settings
+from resources.lib.addon import SETTINGS
 
 
 class Service(xbmc.Monitor):
     def __init__(self):
         super().__init__()
 
-        self._settings = Settings()
         self._importer = None
 
         # If the last scan time has never been set, we'll need to set it
-        if self._settings.state.last_refresh is None:
-            self._settings.state.last_refresh = utcdt.now()
+        if SETTINGS.state.last_refresh is None:
+            SETTINGS.state.last_refresh = utcdt.now()
 
-        self._importer = Importer(clean=self._settings.start.clean, scan=self._settings.start.scan)
+        self._importer = Importer(clean=SETTINGS.start.clean, scan=SETTINGS.start.scan)
 
         while not self.abortRequested():
             self.waitForAbort(100)

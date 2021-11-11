@@ -8,37 +8,29 @@ import resources.lib.utcdt as utcdt
 class Settings:
 
     def __init__(self):
-        self._addon = xbmcaddon.Addon()
+        self.manual = self._Manual()
+        self.start = self._Start()
+        self.state = self._State()
 
-        self.addon_id: str = self._addon.getAddonInfo('id')
-
-        self.manual = self._Manual(self._addon)
-        self.start = self._Start(self._addon)
-        self.state = self._State(self._addon)
-
-    class _SubGroup:
-        def __init__(self, addon: xbmcaddon.Addon):
-            self._addon = addon
-
-    class _ActionGroup(_SubGroup):
+    class _ActionGroup:
         _clean = None
         _scan = None
 
         @property
         def clean(self) -> bool:
-            return self._addon.getSettingBool(self._clean)
+            return ADDON.getSettingBool(self._clean)
 
         @clean.setter
         def clean(self, value: bool) -> None:
-            self._addon.setSettingBool(self._clean, value)
+            ADDON.setSettingBool(self._clean, value)
 
         @property
         def scan(self) -> bool:
-            return self._addon.getSettingBool(self._scan)
+            return ADDON.getSettingBool(self._scan)
 
         @scan.setter
         def scan(self, value: bool) -> None:
-            self._addon.setSettingBool(self._scan, value)
+            ADDON.setSettingBool(self._scan, value)
 
     class _Manual(_ActionGroup):
         _clean = 'manual.clean'
@@ -48,12 +40,12 @@ class Settings:
         _clean = 'on_start.clean'
         _scan = 'on_start.scan'
 
-    class _State(_SubGroup):
+    class _State:
         _last_refresh = 'state.last_refresh'
 
         @property
         def last_refresh(self) -> Optional[utcdt.Dt]:
-            iso_string = self._addon.getSetting(self._last_refresh)
+            iso_string = ADDON.getSetting(self._last_refresh)
             if iso_string == '':
                 return None
 
@@ -63,4 +55,9 @@ class Settings:
 
         @last_refresh.setter
         def last_refresh(self, value: utcdt.Dt):
-            self._addon.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
+            ADDON.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
+
+
+ADDON = xbmcaddon.Addon()
+ADDON_ID = ADDON.getAddonInfo('id')
+SETTINGS = Settings()

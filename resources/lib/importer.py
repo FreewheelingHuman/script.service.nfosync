@@ -6,14 +6,13 @@ import xbmcvfs
 
 import resources.lib.utcdt as utcdt
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.settings import Settings
+from resources.lib.addon import SETTINGS
 
 
 class Importer:
     def __init__(self, clean: bool = False, scan: bool = False):
         self._clean = clean
         self._scan = scan
-        self._settings = Settings()
         self._running = True
 
         self._progress_bar = xbmcgui.DialogProgressBG()
@@ -29,7 +28,7 @@ class Importer:
     def resume(self):
         self._update_dialog(32010)
 
-        last_scan = self._settings.state.last_refresh
+        last_scan = SETTINGS.state.last_refresh
         scan_time = utcdt.now()
 
         response = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
@@ -47,7 +46,7 @@ class Importer:
             if self._need_refresh_episode(episode['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
-        self._settings.state.last_refresh = scan_time
+        SETTINGS.state.last_refresh = scan_time
 
         self._close_dialog()
 
