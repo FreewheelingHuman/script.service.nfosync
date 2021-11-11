@@ -49,11 +49,11 @@ class Settings:
         _scan = 'on_start.scan'
 
     class _State(_SubGroup):
-        _last_scan = 'state.last_scan'
+        _last_refresh = 'state.last_refresh'
 
         @property
-        def last_scan(self) -> Optional[utcdt.Dt]:
-            iso_string = self._addon.getSetting(self._last_scan)
+        def last_refresh(self) -> Optional[utcdt.Dt]:
+            iso_string = self._addon.getSetting(self._last_refresh)
             if iso_string == '':
                 return None
 
@@ -61,6 +61,6 @@ class Settings:
 
             return last_scan
 
-        @last_scan.setter
-        def last_scan(self, value: utcdt.Dt):
-            self._addon.setSetting(self._last_scan, value.isoformat(timespec='seconds'))
+        @last_refresh.setter
+        def last_refresh(self, value: utcdt.Dt):
+            self._addon.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))

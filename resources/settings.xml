@@ -31,7 +31,7 @@
         </category>
         <category id="state" label="32006" help="">
             <group id="5" label="32006">
-                <setting id="state.last_scan" type="string" label="32007" help="">
+                <setting id="state.last_refresh" type="string" label="32007" help="">
                     <level>4</level>
                     <default/>
                     <constraints>

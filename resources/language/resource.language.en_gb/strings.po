@@ -15,27 +15,27 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "#32001"
-msgid "Manual Refresh"
+msgid "Manual Import"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Clean library"
+msgid "Clean missing items from library"
 msgstr ""
 
 msgctxt "#32004"
-msgid "NFO Sync: Cleaning"
+msgid "Cleaning"
 msgstr ""
 
 msgctxt "#32004"
-msgid "Refresh On Start"
+msgid "Import On Start"
 msgstr ""
 
 msgctxt "#32005"
-msgid "Refresh Options"
+msgid "Import Options"
 msgstr ""
 
 msgctxt "#32006"
-msgid "Refresh State"
+msgid "Import State"
 msgstr ""
 
 msgctxt "#32007"
@@ -43,13 +43,17 @@ msgid "Time of last refresh scan"
 msgstr ""
 
 msgctxt "#32008"
-msgid "Active refresh?"
+msgid "Active import?"
 msgstr ""
 
 msgctxt "#32009"
-msgid "Scan for new files"
+msgid "Check for new files"
 msgstr ""
 
 msgctxt "#32010"
-msgid "NFO Sync: Updating"
+msgid "Updating"
+msgstr ""
+
+msgctxt "#32011"
+msgid "NFO Sync"
 msgstr ""

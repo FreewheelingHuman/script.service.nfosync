@@ -9,7 +9,7 @@ import resources.lib.jsonrpc as jsonrpc
 from resources.lib.settings import Settings
 
 
-class Refresher:
+class Importer:
     def __init__(self, clean: bool = False, scan: bool = False):
         self._clean = clean
         self._scan = scan
@@ -20,16 +20,16 @@ class Refresher:
         self._progress_bar_up = False
 
         if self._clean:
-            self._update_dialog(xbmc.getLocalizedString(32003))
+            self._update_dialog(32003)
             jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
             return
 
         self.resume()
 
     def resume(self):
-        self._update_dialog(xbmc.getLocalizedString(32010))
+        self._update_dialog(32010)
 
-        last_scan = self._settings.state.last_scan
+        last_scan = self._settings.state.last_refresh
         scan_time = utcdt.now()
 
         response = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
@@ -47,7 +47,7 @@ class Refresher:
             if self._need_refresh_episode(episode['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
-        self._settings.state.last_scan = scan_time
+        self._settings.state.last_refresh = scan_time
 
         self._close_dialog()
 
@@ -110,9 +110,12 @@ class Refresher:
         tv_show_nfo = os.path.join(file, 'tvshow.nfo')
         return self._file_warrants_refresh(tv_show_nfo, last_scan)
 
-    def _update_dialog(self, heading: str):
+    def _update_dialog(self, message_num: int):
+        heading = xbmc.getLocalizedString(32011)
+        message = xbmc.getLocalizedString(message_num)
+
         if self._progress_bar_up:
-            self._progress_bar.update(0, heading)
+            self._progress_bar.update(0, heading, message)
         else:
-            self._progress_bar.create(heading)
+            self._progress_bar.create(heading, message)
             self._progress_bar_up = True
