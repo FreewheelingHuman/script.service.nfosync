@@ -16,7 +16,8 @@ class _CustomMethods:
         def recv(self) -> str:
             return 'Other.' + self._method
 
-    refresh = _Method('NFOSync.Refresh')
+    import_now = _Method('NFOSync.Import_Now')
+    import_wait = _Method('NFOSync.Import_Wait')
 
 
 custom_methods = _CustomMethods()
