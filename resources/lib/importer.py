@@ -1,4 +1,5 @@
 import os
+from typing import Final
 
 import xbmcgui
 import xbmcvfs
@@ -10,13 +11,13 @@ from resources.lib.addon import ADDON, SETTINGS
 
 class Importer:
     def __init__(self, visible: bool, clean: bool, refresh: bool, scan: bool):
-        self._visible = visible
+        self._visible: Final = visible
         self._todo_clean = clean
         self._todo_refresh = refresh
         self._todo_scan = scan
         self._awaiting = ''
 
-        self._stages = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
+        self._stages: Final = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
 
         if self._visible:
             self._progress_bar = xbmcgui.DialogProgressBG()

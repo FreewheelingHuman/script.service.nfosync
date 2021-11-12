@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Final, Optional
 
 import xbmcaddon
 
@@ -8,10 +8,10 @@ import resources.lib.utcdt as utcdt
 class Settings:
 
     def __init__(self):
-        self.manual = self._Manual()
-        self.start = self._Start()
-        self.periodic = self._Periodic()
-        self.state = self._State()
+        self.manual: Final = self._Manual()
+        self.start: Final = self._Start()
+        self.periodic: Final = self._Periodic()
+        self.state: Final = self._State()
 
     class _ActionGroup:
         _visible = None
@@ -43,24 +43,24 @@ class Settings:
             return ADDON.getSettingBool(self._enabled)
 
     class _Manual(_ActionGroup):
-        _visible = 'manual.visible'
-        _clean = 'manual.clean'
-        _refresh = 'manual.refresh'
-        _scan = 'manual.scan'
+        _visible: Final = 'manual.visible'
+        _clean: Final = 'manual.clean'
+        _refresh: Final = 'manual.refresh'
+        _scan: Final = 'manual.scan'
 
     class _Start(_SwitchableActionGroup):
-        _enabled = 'on_start.enabled'
-        _visible = 'on_start.visible'
-        _clean = 'on_start.clean'
-        _refresh = 'on_start.refresh'
-        _scan = 'on_start.scan'
+        _enabled: Final = 'on_start.enabled'
+        _visible: Final = 'on_start.visible'
+        _clean: Final = 'on_start.clean'
+        _refresh: Final = 'on_start.refresh'
+        _scan: Final = 'on_start.scan'
 
     class _Periodic(_SwitchableActionGroup):
-        _enabled = 'periodic.enabled'
-        _visible = 'periodic.visible'
-        _clean = 'periodic.clean'
-        _refresh = 'periodic.refresh'
-        _scan = 'periodic.scan'
+        _enabled: Final = 'periodic.enabled'
+        _visible: Final = 'periodic.visible'
+        _clean: Final = 'periodic.clean'
+        _refresh: Final = 'periodic.refresh'
+        _scan: Final = 'periodic.scan'
 
         @property
         def period(self) -> int:
@@ -88,10 +88,10 @@ class Settings:
             return last_scan
 
         @last_refresh.setter
-        def last_refresh(self, value: utcdt.Dt):
+        def last_refresh(self, value: utcdt.Dt) -> None:
             ADDON.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
 
 
-ADDON = xbmcaddon.Addon()
-ADDON_ID = ADDON.getAddonInfo('id')
-SETTINGS = Settings()
+ADDON: Final = xbmcaddon.Addon()
+ADDON_ID: Final = ADDON.getAddonInfo('id')
+SETTINGS: Final = Settings()

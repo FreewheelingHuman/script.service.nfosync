@@ -1,4 +1,5 @@
 import json
+from typing import Final
 
 import xbmc
 
@@ -14,8 +15,10 @@ class Service(xbmc.Monitor):
 
         self._importer = None
 
-        self._periodic_alarm = ADDON_ID + '.periodic_alarm'
+        self._periodic_alarm: Final = f'{ADDON_ID}.periodic_alarm'
         self._periodic_alarm_period = 0
+
+        self._wait_alarm: Final = f'{ADDON_ID}.wait_alarm'
 
         # If the last scan time has never been set, we'll need to set it
         if SETTINGS.state.last_refresh is None:
