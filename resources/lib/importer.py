@@ -17,9 +17,6 @@ class Importer:
         self._awaiting = ''
 
         self._stages = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
-        if self._stages == 0:
-            self._running = False
-            return
 
         if self._visible:
             self._progress_bar = xbmcgui.DialogProgressBG()
@@ -28,10 +25,6 @@ class Importer:
     @property
     def awaiting(self) -> str:
         return self._awaiting
-
-    @property
-    def running(self) -> bool:
-        return self._running
 
     # Returns true if there's still more to do
     def resume(self) -> bool:
