@@ -19,35 +19,35 @@ class Service(xbmc.Monitor):
             SETTINGS.state.last_refresh = utcdt.now()
 
         if SETTINGS.start.enabled:
-            self._importer = Importer(
+            self._importer, still_running = Importer.start(
                 visible=SETTINGS.start.visible,
                 clean=SETTINGS.start.clean,
                 refresh=SETTINGS.start.refresh,
                 scan=SETTINGS.start.scan
             )
+            if not still_running:
+                self._importer = None
 
         while not self.abortRequested():
             self.waitForAbort(100)
 
     def onNotification(self, sender: str, method: str, data: str) -> None:
-        if self._importer_running and method == self._importer.awaiting:
-            self._importer.resume()
+        if self._importer and method == self._importer.awaiting:
+            still_running = self._importer.resume()
+            if not still_running:
+                self._importer = None
             return
 
-        if not self._importer_running and method == jsonrpc.custom_methods.refresh.recv:
+        if not self._importer and method == jsonrpc.custom_methods.refresh.recv:
             options = json.loads(data)
-            self._importer = Importer(
+            self._importer, still_running = Importer.start(
                 visible=options['visible'],
                 clean=options['clean'],
                 refresh=options['refresh'],
                 scan=options['scan'])
+            if not still_running:
+                self._importer = None
             return
-
-    @property
-    def _importer_running(self) -> bool:
-        if self._importer is None:
-            return False
-        return self._importer.running
 
 
 if __name__ == "__main__":

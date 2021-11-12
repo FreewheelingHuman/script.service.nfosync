@@ -15,7 +15,6 @@ class Importer:
         self._todo_refresh = refresh
         self._todo_scan = scan
         self._awaiting = ''
-        self._running = True
 
         self._stages = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
         if self._stages == 0:
@@ -26,8 +25,6 @@ class Importer:
             self._progress_bar = xbmcgui.DialogProgressBG()
             self._progress_bar_up = False
 
-        self.resume()
-
     @property
     def awaiting(self) -> str:
         return self._awaiting
@@ -36,13 +33,14 @@ class Importer:
     def running(self) -> bool:
         return self._running
 
-    def resume(self) -> None:
+    # Returns true when complete
+    def resume(self) -> bool:
         if self._todo_clean:
             self._update_dialog(32003)
             self._todo_clean = False
             self._clean()
             self._awaiting = 'VideoLibrary.OnCleanFinished'
-            return
+            return False
 
         if self._todo_refresh:
             self._update_dialog(32010)
@@ -55,10 +53,15 @@ class Importer:
             self._todo_scan = False
             self._scan()
             self._awaiting = 'VideoLibrary.OnScanFinished'
-            return
+            return False
 
         self._close_dialog()
-        self._running = False
+        return False
+
+    @classmethod
+    def start(cls, visible: bool, clean: bool, refresh: bool, scan: bool) -> ('Importer', bool):
+        importer = cls(visible=visible, clean=clean, refresh=refresh, scan=scan)
+        return importer, importer.resume()
 
     @staticmethod
     def _clean() -> None:
