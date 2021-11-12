@@ -10,6 +10,7 @@ class Settings:
     def __init__(self):
         self.manual = self._Manual()
         self.start = self._Start()
+        self.periodic = self._Periodic()
         self.state = self._State()
 
     class _ActionGroup:
@@ -53,6 +54,25 @@ class Settings:
         _clean = 'on_start.clean'
         _refresh = 'on_start.refresh'
         _scan = 'on_start.scan'
+
+    class _Periodic(_SwitchableActionGroup):
+        _enabled = 'periodic.enabled'
+        _visible = 'periodic.visible'
+        _clean = 'periodic.clean'
+        _refresh = 'periodic.refresh'
+        _scan = 'periodic.scan'
+
+        @property
+        def period(self) -> int:
+            return ADDON.getSettingInt('periodic.period')
+
+        @property
+        def avoidplay(self) -> bool:
+            return ADDON.getSettingBool('periodic.avoidplay')
+
+        @property
+        def waitafterplay(self) -> int:
+            return ADDON.getSettingInt('periodic.waitafterplay')
 
     class _State:
         _last_refresh = 'state.last_refresh'
