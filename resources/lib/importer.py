@@ -33,14 +33,14 @@ class Importer:
     def running(self) -> bool:
         return self._running
 
-    # Returns true when complete
+    # Returns true if there's still more to do
     def resume(self) -> bool:
         if self._todo_clean:
             self._update_dialog(32003)
             self._todo_clean = False
             self._clean()
             self._awaiting = 'VideoLibrary.OnCleanFinished'
-            return False
+            return True
 
         if self._todo_refresh:
             self._update_dialog(32010)
@@ -53,7 +53,7 @@ class Importer:
             self._todo_scan = False
             self._scan()
             self._awaiting = 'VideoLibrary.OnScanFinished'
-            return False
+            return True
 
         self._close_dialog()
         return False
