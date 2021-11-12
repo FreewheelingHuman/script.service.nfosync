@@ -26,13 +26,15 @@
             </group>
         </category>
         <category id="on_start" label="32004">
-            <group id="2" label="32005">
+            <group id="2" label="32018">
                 <setting id="on_start.enabled" type="boolean" label="32014" help="">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="on_start.visible" type="boolean" label="32015" help="" parent="on_start.enabled">
+            </group>
+            <group id="7" label="32005">
+                <setting id="on_start.visible" type="boolean" label="32015" help="">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
@@ -40,7 +42,7 @@
 	                    <dependency type="enable" setting="on_start.enabled">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="on_start.clean" type="boolean" label="32002" help="" parent="on_start.enabled">
+                <setting id="on_start.clean" type="boolean" label="32002" help="">
                     <level>3</level>
                     <default>false</default>
                     <control type="toggle" />
@@ -48,7 +50,7 @@
 	                    <dependency type="enable" setting="on_start.enabled">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="on_start.refresh" type="boolean" label="32013" help="" parent="on_start.enabled">
+                <setting id="on_start.refresh" type="boolean" label="32013" help="">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
@@ -56,7 +58,7 @@
 	                    <dependency type="enable" setting="on_start.enabled">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="on_start.scan" type="boolean" label="32009" help="" parent="on_start.enabled">
+                <setting id="on_start.scan" type="boolean" label="32009" help="">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
