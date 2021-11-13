@@ -10,6 +10,8 @@ from resources.lib.addon import ADDON, SETTINGS
 
 
 class Importer:
+    _progress_bar: Final = xbmcgui.DialogProgressBG()
+
     def __init__(self, visible: bool, clean: bool, refresh: bool, scan: bool):
         self._visible: Final = visible
         self._todo_clean = clean
@@ -20,21 +22,20 @@ class Importer:
         self._stages: Final = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
 
         if self._visible:
-            self._progress_bar = xbmcgui.DialogProgressBG()
             self._progress_bar_up = False
 
     @property
     def awaiting(self) -> str:
         return self._awaiting
 
-    # Returns true if there's still more to do
+    # Returns true when it is done
     def resume(self) -> bool:
         if self._todo_clean:
             self._update_dialog(32003)
             self._todo_clean = False
             self._clean()
             self._awaiting = 'VideoLibrary.OnCleanFinished'
-            return True
+            return False
 
         if self._todo_refresh:
             self._update_dialog(32010)
@@ -47,10 +48,10 @@ class Importer:
             self._todo_scan = False
             self._scan()
             self._awaiting = 'VideoLibrary.OnScanFinished'
-            return True
+            return False
 
         self._close_dialog()
-        return False
+        return True
 
     @classmethod
     def start(cls, visible: bool, clean: bool, refresh: bool, scan: bool) -> ('Importer', bool):

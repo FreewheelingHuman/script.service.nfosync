@@ -18,7 +18,8 @@ class _CustomMethods:
             return 'Other.' + self._method
 
     import_now: Final = _Method('NFOSync.Import_Now')
-    import_wait: Final = _Method('NFOSync.Import_Wait')
+    import_periodic: Final = _Method('NFOSync.Import_Periodic')
+    periodic_wait_done: Final = _Method('NFOSync.Periodic_Wait_Done')
 
 
 custom_methods = _CustomMethods()
