@@ -72,7 +72,10 @@ class Settings:
 
         @property
         def wait(self) -> int:
-            return ADDON.getSettingInt('periodic.wait')
+            if self.avoid_play:
+                return ADDON.getSettingInt('periodic.wait')
+            else:
+                return 0
 
     class _State:
         _last_refresh = 'state.last_refresh'
