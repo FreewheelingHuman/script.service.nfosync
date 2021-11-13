@@ -103,7 +103,7 @@ class Service(xbmc.Monitor):
             self._cancel_periodic_wait_alarm()
 
         command = f'NotifyAll({ADDON_ID},{jsonrpc.custom_methods.periodic_wait_done.send})'
-        time = f'{SETTINGS.periodic.waitafterplay // 60}:{SETTINGS.periodic.waitafterplay % 60}'
+        time = f'{SETTINGS.periodic.waitafterplay // 60}:{SETTINGS.periodic.waitafterplay % 60}:00'
         xbmc.executebuiltin(f'AlarmClock({self._periodic_wait_alarm},{command},{time},silent)')
 
         self._periodic_wait_alarm_running = True
