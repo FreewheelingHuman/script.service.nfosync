@@ -1,5 +1,6 @@
 from typing import Final, Optional
 
+import xbmc
 import xbmcaddon
 
 import resources.lib.utcdt as utcdt
@@ -97,4 +98,5 @@ class Settings:
 
 ADDON: Final = xbmcaddon.Addon()
 ADDON_ID: Final = ADDON.getAddonInfo('id')
+PLAYER: Final = xbmc.Player()
 SETTINGS: Final = Settings()
