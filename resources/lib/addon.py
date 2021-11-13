@@ -67,12 +67,12 @@ class Settings:
             return ADDON.getSettingInt('periodic.period')
 
         @property
-        def avoidplay(self) -> bool:
-            return ADDON.getSettingBool('periodic.avoidplay')
+        def avoid_play(self) -> bool:
+            return ADDON.getSettingBool('periodic.avoid_play')
 
         @property
-        def waitafterplay(self) -> int:
-            return ADDON.getSettingInt('periodic.waitafterplay')
+        def wait(self) -> int:
+            return ADDON.getSettingInt('periodic.wait')
 
     class _State:
         _last_refresh = 'state.last_refresh'

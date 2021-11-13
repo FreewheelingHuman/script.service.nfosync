@@ -92,7 +92,7 @@
 	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="periodic.avoidplay" type="boolean" label="32020" help="">
+                <setting id="periodic.avoid_play" type="boolean" label="32020" help="">
                    	<level>0</level>
                     <default>true</default>
                     <control type="toggle" />
@@ -100,7 +100,7 @@
 	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="periodic.waitafterplay" type="integer"
+                <setting id="periodic.wait" type="integer"
                          label="32021" help="32022" parent="periodic.avoidplay">
                    	<level>0</level>
                     <default>10</default>
@@ -114,7 +114,7 @@
 	                </control>
                     <dependencies>
 	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
-                        <dependency type="enable" setting="periodic.avoidplay">true</dependency>
+                        <dependency type="enable" setting="periodic.avoid_play">true</dependency>
                     </dependencies>
                 </setting>
             </group>
