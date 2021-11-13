@@ -44,33 +44,15 @@ class Service(xbmc.Monitor):
 
     def onNotification(self, sender: str, method: str, data: str) -> None:
         if self._import_queue and method == self._import_queue[0].awaiting:
-            while True:
-                done = self._import_queue[0].resume()
-                if done:
-                    self._import_queue.popleft()
-                    if self._import_queue:
-                        continue
-                break
+            self._continue_importing()
             return
 
         if method == jsonrpc.custom_methods.import_now.recv:
-            options = json.loads(data)
-            importer = Importer(
-                visible=options['visible'],
-                clean=options['clean'],
-                refresh=options['refresh'],
-                scan=options['scan'])
-            if self._import_queue:
-                self._import_queue.append(importer)
-            else:
-                done = importer.resume()
-                if not done:
-                    self._import_queue.append(importer)
+            self._handle_import_now_request(data)
             return
 
-        if method == 'Player.OnStop':
-            if self._periodic_wait_queue:
-                self._set_periodic_wait_alarm()
+        if method == 'Player.OnStop' and self._periodic_wait_queue:
+            self._set_periodic_wait_alarm()
             return
 
     def onSettingsChanged(self) -> None:
@@ -116,6 +98,28 @@ class Service(xbmc.Monitor):
         xbmc.executebuiltin(f'CancelAlarm({self._periodic_wait_alarm}, silent)')
         self._periodic_wait_alarm_running = False
 
+    def _continue_importing(self) -> None:
+        while True:
+            done = self._import_queue[0].resume()
+            if done:
+                self._import_queue.popleft()
+                if self._import_queue:
+                    continue
+            break
+
+    def _handle_import_now_request(self, data) -> None:
+        options = json.loads(data)
+        importer = Importer(
+            visible=options['visible'],
+            clean=options['clean'],
+            refresh=options['refresh'],
+            scan=options['scan'])
+        if self._import_queue:
+            self._import_queue.append(importer)
+        else:
+            done = importer.resume()
+            if not done:
+                self._import_queue.append(importer)
 
 if __name__ == "__main__":
     Service()
