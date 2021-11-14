@@ -4,6 +4,7 @@ from typing import Final
 
 import xbmc
 
+import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
 from resources.lib.importer import Importer
@@ -93,6 +94,9 @@ class Service(xbmc.Monitor):
         elif method == 'Player.OnStop':
             self._periodic_play_stop()
 
+        elif method == 'VideoLibrary.OnUpdate' and SETTINGS.export.enabled:
+            self._process_update(data)
+
     def onSettingsChanged(self) -> None:
         if self._periodic_trigger.minutes != SETTINGS.periodic.period:
             self._periodic_trigger.set(SETTINGS.periodic.period)
@@ -153,6 +157,18 @@ class Service(xbmc.Monitor):
             done = importer.resume()
             if not done:
                 self._import_queue.append(importer)
+
+    @staticmethod
+    def _process_update(data: str) -> None:
+        data = json.loads(data)
+
+        # Ignore freshly added items - they don't need to be exported
+        if data.get('added'):
+            return
+
+        item = data['item']
+        if item['type'] in ['movie', 'tvshow', 'episode']:
+            exporter.export(item['id'])
 
 
 if __name__ == "__main__":
