@@ -65,7 +65,10 @@ class Settings:
 
         @property
         def period(self) -> int:
-            return ADDON.getSettingInt('periodic.period') * 60
+            if self.enabled:
+                return ADDON.getSettingInt('periodic.period') * 60
+            else:
+                return 0
 
         @property
         def avoid_play(self) -> bool:
