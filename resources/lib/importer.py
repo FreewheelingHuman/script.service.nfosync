@@ -1,6 +1,7 @@
 import os
 from typing import Final
 
+import xbmc
 import xbmcgui
 import xbmcvfs
 
@@ -93,10 +94,19 @@ class Importer:
             return False
 
         stats = xbmcvfs.Stat(file)
-        last_modified = utcdt.fromtimestamp(stats.st_mtime())
 
-        if last_modified > last_scan:
-            return True
+        # Stat doesn't give any indication if it was successful.
+        # If it failed, then st_mtime will be random garbage.
+        # If this happens to be a valid POSIX timestamp, then we get an erroneous result, unfortunately.
+        # If it isn't a valid POSIX timestamp, we get an exception we can at least handle
+        try:
+            last_modified = utcdt.fromtimestamp(stats.st_mtime())
+            if last_modified > last_scan:
+                return True
+
+        except (OSError, OverflowError) as error:
+            xbmc.log(f'Unable to check timestamp of "{file}" due to: {error}')
+
         return False
 
     def _need_refresh_episode(self, file: str, last_scan: utcdt.Dt) -> bool:
