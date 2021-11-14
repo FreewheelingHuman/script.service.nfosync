@@ -1,9 +1,15 @@
+import json
 from typing import Final, Optional
 
 import xbmc
 import xbmcaddon
 
 import resources.lib.utcdt as utcdt
+
+
+ADDON: Final = xbmcaddon.Addon()
+ADDON_ID: Final = ADDON.getAddonInfo('id')
+PLAYER: Final = xbmc.Player()
 
 
 class Settings:
@@ -82,7 +88,27 @@ class Settings:
                 return 0
 
     class _State:
-        _last_refresh = 'state.last_refresh'
+        _last_refresh: Final = 'state.last_refresh'
+
+        class _RefreshExceptions:
+            _refresh_exceptions: Final = 'state.refresh_exceptions'
+
+            def __init__(self):
+                self._cache = json.loads(ADDON.getSettingString(self._refresh_exceptions))
+
+            def __getitem__(self, file: str) -> utcdt.Dt:
+                return utcdt.fromisoformat(self._cache[file])
+
+            def __setitem__(self, file: str, timestamp: utcdt.Dt) -> None:
+                self._cache[file] = timestamp.isoformat(timespec='seconds')
+                ADDON.setSettingString(self._refresh_exceptions, json.dumps(self._cache))
+
+            def clear(self) -> None:
+                self._cache = {}
+                ADDON.setSettingString(self._refresh_exceptions, '{}')
+
+        def __init__(self):
+            self._refresh_exceptions_wrapper: Final = self._RefreshExceptions()
 
         @property
         def last_refresh(self) -> Optional[utcdt.Dt]:
@@ -98,8 +124,9 @@ class Settings:
         def last_refresh(self, value: utcdt.Dt) -> None:
             ADDON.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
 
+        @property
+        def refresh_exceptions(self) -> _RefreshExceptions:
+            return self._refresh_exceptions_wrapper
 
-ADDON: Final = xbmcaddon.Addon()
-ADDON_ID: Final = ADDON.getAddonInfo('id')
-PLAYER: Final = xbmc.Player()
+
 SETTINGS: Final = Settings()
