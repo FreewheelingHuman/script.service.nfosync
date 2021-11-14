@@ -186,7 +186,7 @@
                 </setting>
                 <setting id="state.refresh_exceptions" type="string" label="32027" help="">
                     <level>4</level>
-                    <default/>
+                    <default>{}</default>
                     <constraints>
                         <allowempty>true</allowempty>
                     </constraints>
