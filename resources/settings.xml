@@ -72,7 +72,7 @@
             <group id="3" label="32018">
                 <setting id="periodic.enabled" type="boolean" label="32014" help="">
                     <level>0</level>
-                    <default>true</default>
+                    <default>false</default>
                     <control type="toggle" />
                 </setting>
             </group>
