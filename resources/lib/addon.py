@@ -18,6 +18,7 @@ class Settings:
         self.manual: Final = self._Manual()
         self.start: Final = self._Start()
         self.periodic: Final = self._Periodic()
+        self.export: Final = self._AutoExport()
         self.state: Final = self._State()
 
     class _ActionGroup:
@@ -86,6 +87,18 @@ class Settings:
                 return ADDON.getSettingInt('periodic.wait')
             else:
                 return 0
+
+    class _AutoExport:
+        _enabled: Final = 'auto_export.enabled'
+        _create: Final = 'auto_export.create'
+
+        @property
+        def enabled(self) -> bool:
+            return ADDON.getSettingBool(self._enabled)
+
+        @property
+        def create(self) -> bool:
+            return ADDON.getSettingBool(self._create)
 
     class _State:
         _last_refresh: Final = 'state.last_refresh'
