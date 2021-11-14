@@ -153,6 +153,25 @@
                 </setting>
             </group>
         </category>
+        <category id="auto_export" label="32023" help="">
+            <group id="8" label="32018">
+                <setting id="auto_export.enabled" type="boolean" label="32026" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+            <group id="9" label="32024">
+                <setting id="auto_export.create" type="boolean" label="32025" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="auto_export.enabled">true</dependency>
+                    </dependencies>
+                </setting>
+            </group>
+        </category>
         <category id="state" label="32006" help="">
             <group id="5" label="32006">
                 <setting id="state.last_refresh" type="string" label="32007" help="">

@@ -101,3 +101,19 @@ msgstr ""
 msgctxt "#32022"
 msgid "Set to 0 to import as soon as playing stops"
 msgstr ""
+
+msgctxt "#32023"
+msgid "Auto Export"
+msgstr ""
+
+msgctxt "#32024"
+msgid "Export Options"
+msgstr ""
+
+msgctxt "#32025"
+msgid "Create nonexistent NFOs"
+msgstr ""
+
+msgctxt "#32026"
+msgid "Automatically update NFOs"
+msgstr ""
