@@ -184,6 +184,16 @@
                         <heading>32007</heading>
                     </control>
                 </setting>
+                <setting id="state.refresh_exceptions" type="string" label="32027" help="">
+                    <level>4</level>
+                    <default/>
+                    <constraints>
+                        <allowempty>true</allowempty>
+                    </constraints>
+                    <control type="edit" format="string">
+                        <heading>32027</heading>
+                    </control>
+                </setting>
             </group>
         </category>
     </section>

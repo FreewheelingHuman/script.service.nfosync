@@ -117,3 +117,7 @@ msgstr ""
 msgctxt "#32026"
 msgid "Automatically update NFOs"
 msgstr ""
+
+msgctxt "#32027"
+msgid "Automatically update NFOs"
+msgstr ""
