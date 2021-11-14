@@ -7,7 +7,34 @@ import xbmc
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
 from resources.lib.importer import Importer
-from resources.lib.addon import ADDON_ID, SETTINGS
+from resources.lib.addon import ADDON_ID, PLAYER, SETTINGS
+
+
+class Alarm:
+    def __init__(self, name: str, command: str, loop: bool = False):
+        self._name: Final = f'{ADDON_ID}.{name}'
+        self._command: Final = command
+        self._loop: Final = ',loop' if loop else ''
+
+        self._minutes = 0
+
+    @property
+    def active(self) -> bool:
+        return bool(self._minutes)
+
+    @property
+    def minutes(self) -> int:
+        return self._minutes
+
+    def set(self, minutes):
+        self.cancel()
+        if minutes > 0:
+            self._minutes = minutes
+            xbmc.executebuiltin(f'AlarmClock({self._name},{self._command},{self._minutes},silent{self._loop})')
+
+    def cancel(self):
+        xbmc.executebuiltin(f'CancelAlarm({self._name},silent)')
+        self._minutes = 0
 
 
 class Service(xbmc.Monitor):
@@ -15,12 +42,17 @@ class Service(xbmc.Monitor):
         super().__init__()
 
         self._import_queue = collections.deque()
-        self._periodic_wait_queue = collections.deque()
 
-        self._periodic_trigger_alarm: Final = f'{ADDON_ID}.periodic_alarm'
-        self._periodic_trigger_alarm_length = 0
-        self._periodic_wait_alarm: Final = f'{ADDON_ID}.periodic_wait_alarm'
-        self._periodic_wait_alarm_running = False
+        self._waiting_periodic = None
+        self._periodic_trigger = Alarm(
+            name='periodic.trigger',
+            command=f'NotifyAll({ADDON_ID},{jsonrpc.custom_methods.import_periodic.send})',
+            loop=True
+        )
+        self._periodic_waiter = Alarm(
+            name='periodic.wait',
+            command=f'NotifyAll({ADDON_ID},{jsonrpc.custom_methods.periodic_wait_done.send})'
+        )
 
         # If the last scan time has never been set, we'll need to set it
         if SETTINGS.state.last_refresh is None:
@@ -37,7 +69,7 @@ class Service(xbmc.Monitor):
                 self._import_queue.append(importer)
 
         if SETTINGS.periodic.enabled:
-            self._set_periodic_trigger_alarm()
+            self._periodic_trigger.set(SETTINGS.periodic.period)
 
         while not self.abortRequested():
             self.waitForAbort(300)
@@ -45,58 +77,65 @@ class Service(xbmc.Monitor):
     def onNotification(self, sender: str, method: str, data: str) -> None:
         if self._import_queue and method == self._import_queue[0].awaiting:
             self._continue_importing()
-            return
 
-        if method == jsonrpc.custom_methods.import_now.recv:
-            self._handle_import_now_request(data)
-            return
+        elif method == jsonrpc.custom_methods.import_now.recv:
+            self._import_now_request(data)
 
-        if method == 'Player.OnStop' and self._periodic_wait_queue:
-            self._set_periodic_wait_alarm()
-            return
+        elif method == jsonrpc.custom_methods.import_periodic.recv:
+            self._periodic_import_request()
+
+        elif method == jsonrpc.custom_methods.periodic_wait_done.recv:
+            self._periodic_wait_done()
+
+        elif method == 'Player.OnPlay':
+            self._periodic_waiter.cancel()
+
+        elif method == 'Player.OnStop':
+            self._periodic_play_stop()
 
     def onSettingsChanged(self) -> None:
-        # Reset the periodic alarm if it is toggled or the period is changed
-        if SETTINGS.periodic.enabled and not self._periodic_trigger_alarm_length:
-            self._set_periodic_trigger_alarm()
-        elif not SETTINGS.periodic.enabled and self._periodic_trigger_alarm_length:
-            self._cancel_periodic_trigger_alarm()
-        elif self._periodic_trigger_alarm_length != SETTINGS.periodic.period:
-            self._set_periodic_trigger_alarm()
+        if self._periodic_trigger.minutes != SETTINGS.periodic.period:
+            self._periodic_trigger.set(SETTINGS.periodic.period)
 
-    def _set_periodic_trigger_alarm(self) -> None:
-        if self._periodic_trigger_alarm_length:
-            self._cancel_periodic_trigger_alarm()
+        if self._periodic_waiter.active and self._periodic_waiter.minutes != SETTINGS.periodic.wait:
+            self._periodic_waiter.set(SETTINGS.periodic.wait)
 
-        settings = json.dumps({
-            'visible': SETTINGS.periodic.visible,
-            'clean': SETTINGS.periodic.clean,
-            'refresh': SETTINGS.periodic.refresh,
-            'scan': SETTINGS.periodic.scan
-        })
-        command = f'NotifyAll({ADDON_ID},{jsonrpc.custom_methods.import_periodic.send},"{settings}")'
-        time = f'{SETTINGS.periodic.period}:00:00'
-        xbmc.executebuiltin(f'AlarmClock({self._periodic_trigger_alarm},{command},{time},silent,loop)')
+        if (self._waiting_periodic and (not SETTINGS.periodic.avoid_play
+                                        or not SETTINGS.periodic.wait and not PLAYER.isPlaying())):
+            self._periodic_wait_done()
 
-        self._periodic_trigger_alarm_length = SETTINGS.periodic.period
+    def _periodic_play_stop(self):
+        if SETTINGS.periodic.wait:
+            self._periodic_waiter.set(SETTINGS.periodic.wait)
+        elif self._waiting_periodic:
+            self._periodic_wait_done()
 
-    def _set_periodic_wait_alarm(self) -> None:
-        if self._periodic_wait_alarm_running:
-            self._cancel_periodic_wait_alarm()
+    def _import_now_request(self, data) -> None:
+        options = json.loads(data)
+        importer = Importer(
+            visible=options['visible'],
+            clean=options['clean'],
+            refresh=options['refresh'],
+            scan=options['scan'])
+        self._import_soon(importer)
 
-        command = f'NotifyAll({ADDON_ID},{jsonrpc.custom_methods.periodic_wait_done.send})'
-        time = f'{SETTINGS.periodic.waitafterplay // 60}:{SETTINGS.periodic.waitafterplay % 60}:00'
-        xbmc.executebuiltin(f'AlarmClock({self._periodic_wait_alarm},{command},{time},silent)')
+    def _periodic_import_request(self) -> None:
+        importer = Importer(
+            visible=SETTINGS.periodic.visible,
+            clean=SETTINGS.periodic.clean,
+            refresh=SETTINGS.periodic.refresh,
+            scan=SETTINGS.periodic.scan
+        )
+        if (SETTINGS.periodic.avoid_play and PLAYER.isPlaying()
+                or self._periodic_waiter.active):
+            self._waiting_periodic = importer
+        else:
+            self._import_soon(importer)
 
-        self._periodic_wait_alarm_running = True
-
-    def _cancel_periodic_trigger_alarm(self) -> None:
-        xbmc.executebuiltin(f'CancelAlarm({self._periodic_trigger_alarm}, silent)')
-        self._periodic_trigger_alarm_length = 0
-
-    def _cancel_periodic_wait_alarm(self) -> None:
-        xbmc.executebuiltin(f'CancelAlarm({self._periodic_wait_alarm}, silent)')
-        self._periodic_wait_alarm_running = False
+    def _periodic_wait_done(self) -> None:
+        self._periodic_waiter.cancel()
+        self._import_soon(self._waiting_periodic)
+        self._waiting_periodic = None
 
     def _continue_importing(self) -> None:
         while True:
@@ -107,19 +146,14 @@ class Service(xbmc.Monitor):
                     continue
             break
 
-    def _handle_import_now_request(self, data) -> None:
-        options = json.loads(data)
-        importer = Importer(
-            visible=options['visible'],
-            clean=options['clean'],
-            refresh=options['refresh'],
-            scan=options['scan'])
+    def _import_soon(self, importer: Importer) -> None:
         if self._import_queue:
             self._import_queue.append(importer)
         else:
             done = importer.resume()
             if not done:
                 self._import_queue.append(importer)
+
 
 if __name__ == "__main__":
     Service()
