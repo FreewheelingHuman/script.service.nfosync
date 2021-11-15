@@ -162,13 +162,15 @@ class Service(xbmc.Monitor):
     def _process_update(data: str) -> None:
         data = json.loads(data)
 
-        # Ignore freshly added items - they don't need to be exported
-        if data.get('added'):
+        # Always ignore added items if they aren't part a transaction because
+        # refreshing an item will trigger a non-transactional update event.
+        if (data.get('added') and (not data.get('transaction')
+                                   or data.get('transaction') and SETTINGS.export.ignore_added)):
             return
 
         item = data['item']
         if item['type'] in ['movie', 'tvshow', 'episode']:
-            exporter.export(item['id'])
+            exporter.export(item['id'], item['type'])
 
 
 if __name__ == "__main__":
