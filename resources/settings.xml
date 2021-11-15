@@ -170,6 +170,14 @@
 	                    <dependency type="enable" setting="auto_export.enabled">true</dependency>
                     </dependencies>
                 </setting>
+                <setting id="auto_export.ignore_added" type="boolean" label="32028" help="">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="auto_export.enabled">true</dependency>
+                    </dependencies>
+                </setting>
             </group>
         </category>
         <category id="state" label="32006" help="">

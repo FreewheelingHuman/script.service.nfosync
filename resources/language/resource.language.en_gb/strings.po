@@ -121,3 +121,7 @@ msgstr ""
 msgctxt "#32027"
 msgid "Automatically update NFOs"
 msgstr ""
+
+msgctxt "#32028"
+msgid "Ignore updates due to items being scanned in"
+msgstr ""
