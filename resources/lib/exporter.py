@@ -8,7 +8,7 @@ from resources.lib.addon import SETTINGS
 
 
 class _Exporter:
-    _movie_details: Final = [
+    _movie_fields: Final = [
         'title', 'genre', 'year', 'director', 'trailer', 'tagline', 'plot',
         'plotoutline', 'originaltitle', 'lastplayed', 'playcount', 'writer',
         'studio', 'mpaa', 'cast', 'country', 'runtime', 'setid', 'showlink',
@@ -16,14 +16,14 @@ class _Exporter:
         'art', 'userrating', 'ratings', 'premiered', 'uniqueid'
     ]
 
-    _episode_details: Final = [
+    _episode_fields: Final = [
         'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
         'director', 'season', 'episode', 'originaltitle', 'showtitle', 'cast',
         'streamdetails', 'lastplayed', 'fanart', 'dateadded', 'uniqueid', 'art',
         'specialsortseason', 'specialsortepisode', 'userrating', 'ratings'
     ]
 
-    _tvshow_details: Final = [
+    _tvshow_fields: Final = [
         'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
         'episode', 'premiered', 'lastplayed', 'fanart', 'originaltitle',
         'sorttitle', 'season', 'dateadded', 'tag', 'art', 'userrating',
@@ -35,19 +35,19 @@ class _Exporter:
         'movie': _TypeInfo(
             method='VideoLibrary.GetMovieDetails',
             id_name='movieid',
-            details=_movie_details,
+            details=_movie_fields,
             container='moviedetails'
         ),
         'episode': _TypeInfo(
             method='VideoLibrary.GetEpisodeDetails',
             id_name='episodeid',
-            details=_episode_details,
+            details=_episode_fields,
             container='episodedetails'
         ),
         'tvshow': _TypeInfo(
             method='VideoLibrary.GetTVShowDetails',
             id_name='tvshowid',
-            details=_tvshow_details,
+            details=_tvshow_fields,
             container='tvshowdetails'
         )
     }
