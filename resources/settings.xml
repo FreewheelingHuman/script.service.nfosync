@@ -9,7 +9,7 @@
                     <control type="toggle" />
                 </setting>
                 <setting id="manual.clean" type="boolean" label="32002" help="">
-                    <level>3</level>
+                    <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
@@ -43,7 +43,7 @@
                     </dependencies>
                 </setting>
                 <setting id="on_start.clean" type="boolean" label="32002" help="">
-                    <level>3</level>
+                    <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                     <dependencies>
@@ -128,7 +128,7 @@
                     </dependencies>
                 </setting>
                 <setting id="periodic.clean" type="boolean" label="32002" help="">
-                    <level>3</level>
+                    <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                     <dependencies>
