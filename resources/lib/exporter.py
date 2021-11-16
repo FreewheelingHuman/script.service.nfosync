@@ -1,3 +1,4 @@
+import xml.etree.ElementTree as ElementTree
 import xbmc
 
 import resources.lib.jsonrpc as jsonrpc
@@ -58,6 +59,19 @@ class _Exporter:
             properties=self._movie_details
         )
         xbmc.log(f'Results: {result}')
+
+    def _pretty_print(self, element, level=1):
+        def indent(ilevel):
+            return '\n' + '    ' * ilevel
+
+        if len(element):
+            if element.text is None:
+                element.text = indent(level)
+            for subelement in range(len(element)-1):
+                element[subelement].tail = indent(level)
+            element[-1].tail = indent(level-1)
+            for subelement in element:
+                self._pretty_print(subelement, level+1)
 
     def _convert_art(self):
         pass
