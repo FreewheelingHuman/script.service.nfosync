@@ -28,7 +28,13 @@ class _Exporter:
         'ratings', 'runtime', 'uniqueid'
     ]
 
-    _remappings = {
+    _type_info = {
+        'movie': ('VideoLibrary.GetMovieDetails', 'movieid', _movie_details),
+        'episode': ('VideoLibrary.GetEpisodeDetails', 'episodeid', _episode_details),
+        'tvshow': ('VideoLibrary.GetTVShowDetails', 'tvshowid', _tvshow_details)
+    }
+
+    _tag_remaps = {
         'plotoutline': 'outline',
         'writer': 'credits',
         'firstaired': 'aired',
@@ -53,11 +59,10 @@ class _Exporter:
     def export(self):
         xbmc.log('PLACEHOLDER: Export has been triggered.')
 
-        result = jsonrpc.request(
-            'VideoLibrary.GetMovieDetails',
-            movieid=self._media_id,
-            properties=self._movie_details
-        )
+        method, id_name, details = self._type_info[self._media_type]
+        parameters = {id_name: self._media_id, 'properties': details}
+        result = jsonrpc.request(method, **parameters)
+
         xbmc.log(f'Results: {result}')
 
     def _pretty_print(self, element, level=1):
