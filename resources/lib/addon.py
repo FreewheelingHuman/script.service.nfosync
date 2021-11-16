@@ -89,21 +89,17 @@ class Settings:
                 return 0
 
     class _AutoExport:
-        _enabled: Final = 'auto_export.enabled'
-        _create: Final = 'auto_export.create'
-        _ignore_added: Final = 'auto_export.ignore_added'
-
         @property
         def enabled(self) -> bool:
-            return ADDON.getSettingBool(self._enabled)
+            return ADDON.getSettingBool('auto_export.enabled')
 
         @property
         def create(self) -> bool:
-            return ADDON.getSettingBool(self._create)
+            return ADDON.getSettingBool('auto_export.create')
 
         @property
         def ignore_added(self) -> bool:
-            return ADDON.getSettingBool(self._ignore_added)
+            return ADDON.getSettingBool('auto_export.ignore_added')
 
     class _State:
         _last_refresh: Final = 'state.last_refresh'
