@@ -7,23 +7,24 @@ import xbmcvfs
 
 import resources.lib.utcdt as utcdt
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.addon import ADDON, SETTINGS
+from resources.lib.addon import ADDON
+from resources.lib.settings import SYNC, STATE
 
 
-class Importer:
+class Sync:
     _progress_bar: Final = xbmcgui.DialogProgressBG()
 
-    def __init__(self, visible: bool, clean: bool, refresh: bool, scan: bool):
-        self._visible: Final = visible
-        self._todo_clean = clean
-        self._todo_refresh = refresh
-        self._todo_scan = scan
+    def __init__(self):
+        self._todo_clean = SYNC.clean
+        self._todo_imprt = SYNC.imprt
+        self._todo_scan = SYNC.scan
+        self._visible = SYNC.visible
+
+        self._progress_bar_up = False
+
         self._awaiting = ''
 
-        self._stages: Final = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
-
-        if self._visible:
-            self._progress_bar_up = False
+        self._stages: Final = [self._todo_clean, self._todo_imprt, self._todo_scan].count(True)
 
     @property
     def awaiting(self) -> str:
@@ -38,9 +39,9 @@ class Importer:
             self._awaiting = 'VideoLibrary.OnCleanFinished'
             return False
 
-        if self._todo_refresh:
+        if self._todo_imprt:
             self._update_dialog(32010)
-            self._todo_refresh = False
+            self._todo_imprt = False
             self._refresh()
             self._awaiting = ''
 
@@ -55,8 +56,8 @@ class Importer:
         return True
 
     @classmethod
-    def start(cls, visible: bool, clean: bool, refresh: bool, scan: bool) -> ('Importer', bool):
-        importer = cls(visible=visible, clean=clean, refresh=refresh, scan=scan)
+    def start(cls) -> ('Sync', bool):
+        importer = cls()
         return importer, importer.resume()
 
     @staticmethod
@@ -64,7 +65,7 @@ class Importer:
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
 
     def _refresh(self) -> None:
-        last_scan = SETTINGS.state.last_refresh
+        last_scan = STATE.last_refresh
         scan_time = utcdt.now()
 
         response = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
@@ -82,7 +83,7 @@ class Importer:
             if self._need_refresh_episode(episode['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
-        SETTINGS.state.last_refresh = scan_time
+        STATE.last_refresh = scan_time
 
     @staticmethod
     def _scan() -> None:
@@ -159,7 +160,7 @@ class Importer:
         message = ADDON.getLocalizedString(message_num)
 
         if self._progress_bar_up:
-            stages_to_go = [self._todo_clean, self._todo_refresh, self._todo_scan].count(True)
+            stages_to_go = [self._todo_clean, self._todo_imprt, self._todo_scan].count(True)
             progress = int((1 - (stages_to_go / self._stages)) * 100)
             self._progress_bar.update(progress, heading, message)
         else:
