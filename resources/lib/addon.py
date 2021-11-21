@@ -23,6 +23,8 @@ class _Settings:
     def __init__(self):
         self.sync: Final = self._Sync()
         self.triggers: Final = self._Triggers()
+        self.avoidance: Final = self._Avoidance()
+        self.periodic: Final = self._Periodic()
         self.state: Final = self._State()
 
     class _Sync:
