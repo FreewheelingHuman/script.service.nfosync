@@ -1,3 +1,4 @@
+import enum
 import json
 from typing import Final, Optional
 
@@ -12,94 +13,91 @@ ADDON_ID: Final = ADDON.getAddonInfo('id')
 PLAYER: Final = xbmc.Player()
 
 
-class Settings:
+class MovieNfoType(enum.Enum):
+    MOVIE = 'movie'
+    FILENAME = 'filename'
+
+
+class _Settings:
 
     def __init__(self):
-        self.manual: Final = self._Manual()
-        self.start: Final = self._Start()
-        self.periodic: Final = self._Periodic()
-        self.export: Final = self._AutoExport()
+        self.sync: Final = self._Sync()
+        self.triggers: Final = self._Triggers()
         self.state: Final = self._State()
 
-    class _ActionGroup:
-        _visible = None
-        _clean = None
-        _refresh = None
-        _scan = None
-
-        @property
-        def visible(self) -> bool:
-            return ADDON.getSettingBool(self._visible)
+    class _Sync:
 
         @property
         def clean(self) -> bool:
-            return ADDON.getSettingBool(self._clean)
+            return ADDON.getSettingBool('sync.clean')
 
         @property
-        def refresh(self) -> bool:
-            return ADDON.getSettingBool(self._refresh)
+        def export(self) -> bool:
+            return ADDON.getSettingBool('sync.export')
+
+        @property
+        def create_nfo(self) -> bool:
+            return ADDON.getSettingBool('sync.create_nfo')
+
+        @property
+        def movie_nfo(self) -> MovieNfoType:
+            return MovieNfoType(ADDON.getSettingString('sync.create_nfo'))
+
+        @property
+        def imprt(self) -> bool:
+            return ADDON.getSettingBool('sync.import')
+
+        @property
+        def imprt_first(self) -> bool:
+            return ADDON.getSettingBool('sync.import_first')
 
         @property
         def scan(self) -> bool:
-            return ADDON.getSettingBool(self._scan)
-
-    class _SwitchableActionGroup(_ActionGroup):
-        _enabled = None
+            return ADDON.getSettingBool('sync.scan')
 
         @property
-        def enabled(self) -> bool:
-            return ADDON.getSettingBool(self._enabled)
+        def visible(self) -> bool:
+            return ADDON.getSettingBool('sync.visible')
 
-    class _Manual(_ActionGroup):
-        _visible: Final = 'manual.visible'
-        _clean: Final = 'manual.clean'
-        _refresh: Final = 'manual.refresh'
-        _scan: Final = 'manual.scan'
-
-    class _Start(_SwitchableActionGroup):
-        _enabled: Final = 'on_start.enabled'
-        _visible: Final = 'on_start.visible'
-        _clean: Final = 'on_start.clean'
-        _refresh: Final = 'on_start.refresh'
-        _scan: Final = 'on_start.scan'
-
-    class _Periodic(_SwitchableActionGroup):
-        _enabled: Final = 'periodic.enabled'
-        _visible: Final = 'periodic.visible'
-        _clean: Final = 'periodic.clean'
-        _refresh: Final = 'periodic.refresh'
-        _scan: Final = 'periodic.scan'
+    class _Triggers:
 
         @property
-        def period(self) -> int:
-            if self.enabled:
-                return ADDON.getSettingInt('periodic.period') * 60
-            else:
-                return 0
+        def start(self) -> bool:
+            return ADDON.getSettingBool('triggers.start')
 
         @property
-        def avoid_play(self) -> bool:
-            return ADDON.getSettingBool('periodic.avoid_play')
+        def scan(self) -> bool:
+            return ADDON.getSettingBool('triggers.scan')
 
         @property
-        def wait(self) -> int:
-            if self.avoid_play:
-                return ADDON.getSettingInt('periodic.wait')
-            else:
-                return 0
-
-    class _AutoExport:
-        @property
-        def enabled(self) -> bool:
-            return ADDON.getSettingBool('auto_export.enabled')
-
-        @property
-        def create(self) -> bool:
-            return ADDON.getSettingBool('auto_export.create')
+        def update(self) -> bool:
+            return ADDON.getSettingBool('triggers.update')
 
         @property
         def ignore_added(self) -> bool:
-            return ADDON.getSettingBool('auto_export.ignore_added')
+            return ADDON.getSettingBool('triggers.ignore_added')
+
+    class _Avoidance:
+
+        @property
+        def enabled(self) -> bool:
+            return ADDON.getSettingBool('avoidance.enabled')
+
+        @property
+        def wait(self) -> int:
+            if self.enabled:
+                return ADDON.getSettingInt('avoidance.wait')
+            return 0
+
+    class _Periodic:
+
+        @property
+        def enabled(self) -> bool:
+            return ADDON.getSettingBool('periodic.enabled')
+
+        @property
+        def period(self) -> int:
+            return ADDON.getSettingInt('periodic.period') * 60
 
     class _State:
         _last_refresh: Final = 'state.last_refresh'
@@ -143,4 +141,4 @@ class Settings:
             return self._refresh_exceptions_wrapper
 
 
-SETTINGS: Final = Settings()
+SETTINGS: Final = _Settings()
