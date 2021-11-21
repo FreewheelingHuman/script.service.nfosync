@@ -15,11 +15,11 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "#32001"
-msgid "Manual Import"
+msgid "Actions to Take"
 msgstr ""
 
 msgctxt "#32002"
-msgid "Clean missing items from library"
+msgid "Export changes to NFOs"
 msgstr ""
 
 msgctxt "#32003"
@@ -27,11 +27,11 @@ msgid "Cleaning"
 msgstr ""
 
 msgctxt "#32004"
-msgid "Import On Start"
+msgid "When To Sync"
 msgstr ""
 
 msgctxt "#32005"
-msgid "Import Options"
+msgid "Scan for new items"
 msgstr ""
 
 msgctxt "#32006"
@@ -47,7 +47,7 @@ msgid "Active import?"
 msgstr ""
 
 msgctxt "#32009"
-msgid "Add new files from sources"
+msgid "Movie NFO file name"
 msgstr ""
 
 msgctxt "#32010"
@@ -63,65 +63,101 @@ msgid "Adding"
 msgstr ""
 
 msgctxt "#32013"
-msgid "Refresh externally updated library items"
+msgid "Create missing NFOs"
 msgstr ""
 
 msgctxt "#32014"
-msgid "Automatically import when Kodi starts"
+msgid "Import external changes"
 msgstr ""
 
 msgctxt "#32015"
-msgid "Show background progress indicator"
+msgid "Clean missing items from library"
 msgstr ""
 
 msgctxt "#32016"
-msgid "Periodic Import"
+msgid "Periodic Sync"
 msgstr ""
 
 msgctxt "#32017"
-msgid "How often to import in hours"
+msgid "Stop sync from starting during playback"
 msgstr ""
 
 msgctxt "#32018"
-msgid "Enable/Disable"
+msgid "Other Settings"
 msgstr ""
 
 msgctxt "#32019"
-msgid "Period Options"
+msgid "Avoid Playback"
 msgstr ""
 
 msgctxt "#32020"
-msgid "Don't import while media is playing"
+msgid "Ignore changes due to items being scanned in"
 msgstr ""
 
 msgctxt "#32021"
-msgid "Minutes after playing to wait"
+msgid "Minutes after playback ends to wait"
 msgstr ""
 
 msgctxt "#32022"
-msgid "Set to 0 to import as soon as playing stops"
+msgid "Set to 0 to import as soon as playing stops. Max: 1440 minutes (1 day)"
 msgstr ""
 
 msgctxt "#32023"
-msgid "Auto Export"
+msgid "Display sync progress"
 msgstr ""
 
-msgctxt "#32024"
-msgid "Export Options"
-msgstr ""
+# 32024 - removed, no longer in use
 
-msgctxt "#32025"
-msgid "Create nonexistent NFOs"
-msgstr ""
+# 32025 - removed, no longer in use
 
-msgctxt "#32026"
-msgid "Automatically update NFOs"
-msgstr ""
+# 32026 - removed, no longer in use
 
 msgctxt "#32027"
-msgid "Automatically update NFOs"
+msgid "Refresh exceptions in JSON"
 msgstr ""
 
-msgctxt "#32028"
-msgid "Ignore updates due to items being scanned in"
+# 32028 - removed, no longer in use
+
+msgctxt "#32029"
+msgid "<file name>.nfo"
+msgstr ""
+
+msgctxt "#32030"
+msgid "movie.nfo"
+msgstr ""
+
+msgctxt "#32031"
+msgid "External changes take precedence"
+msgstr ""
+
+msgctxt "#32032"
+msgid "Sync Triggers"
+msgstr ""
+
+msgctxt "#32033"
+msgid "Sync when Kodi starts"
+msgstr ""
+
+msgctxt "#32034"
+msgid "Sync on library scan"
+msgstr ""
+
+msgctxt "#32035"
+msgid "Syncs triggered by scans will not scan again"
+msgstr ""
+
+msgctxt "#32036"
+msgid "Export on change"
+msgstr ""
+
+msgctxt "#32037"
+msgid "Sync periodically"
+msgstr ""
+
+msgctxt "#32038"
+msgid "How frequently to sync, in hours"
+msgstr ""
+
+msgctxt "#32039"
+msgid "Min: 1, Max: 168 (1 week)"
 msgstr ""
