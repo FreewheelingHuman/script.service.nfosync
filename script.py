@@ -1,15 +1,9 @@
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.addon import ADDON_ID, SETTINGS
+from resources.lib.addon import ADDON_ID
 
 
 jsonrpc.request(
     'JSONRPC.NotifyAll',
     sender=ADDON_ID,
-    message=jsonrpc.custom_methods.import_now.send,
-    data={
-        'visible': SETTINGS.manual.visible,
-        'clean': SETTINGS.manual.clean,
-        'refresh': SETTINGS.manual.refresh,
-        'scan': SETTINGS.manual.scan
-    }
+    message=jsonrpc.INTERNAL_METHODS.immediate_sync.send,
 )
