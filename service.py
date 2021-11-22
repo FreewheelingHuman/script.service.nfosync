@@ -86,10 +86,10 @@ class Service(xbmc.Monitor):
             self._waiter.cancel()
 
         elif method == 'Player.OnStop':
-            self._periodic_play_stop()
+            self._play_stop()
 
         elif method == 'VideoLibrary.OnUpdate' and TRIGGERS.update:
-            self._process_update(data)
+            self._library_update(data)
 
     def onSettingsChanged(self) -> None:
         if self._periodic_trigger.minutes != PERIODIC.period:
@@ -102,11 +102,10 @@ class Service(xbmc.Monitor):
                                     or not AVOIDANCE.wait and not PLAYER.isPlaying())):
             self._wait_done()
 
-    def _periodic_play_stop(self):
-        if AVOIDANCE.wait:
-            self._waiter.set(AVOIDANCE.wait)
-        elif self._waiting_sync:
-            self._wait_done()
+    def _continue_sync(self) -> None:
+        done = self._active_sync.resume()
+        if not done:
+            self._active_sync = None
 
     def _immediate_sync(self) -> None:
         if not self._active_sync:
@@ -114,27 +113,8 @@ class Service(xbmc.Monitor):
             if not done:
                 self._active_sync = sync
 
-    def _patient_sync(self) -> None:
-        if self._active_sync:
-            return
-        if (AVOIDANCE.enabled and PLAYER.isPlaying()
-                or self._waiter.active):
-            self._waiting_sync = Sync()
-        else:
-            self._immediate_sync()
-
-    def _wait_done(self) -> None:
-        self._waiter.cancel()
-        self._immediate_sync()
-        self._waiting_sync = None
-
-    def _continue_sync(self) -> None:
-        done = self._active_sync.resume()
-        if not done:
-            self._active_sync = None
-
     @staticmethod
-    def _process_update(data: str) -> None:
+    def _library_update(data: str) -> None:
         data = json.loads(data)
 
         # Always ignore added items if they aren't part a transaction because
@@ -146,6 +126,26 @@ class Service(xbmc.Monitor):
         item = data['item']
         if item['type'] in ['movie', 'tvshow', 'episode']:
             exporter.export(item['id'], item['type'])
+
+    def _patient_sync(self) -> None:
+        if self._active_sync:
+            return
+        if (AVOIDANCE.enabled and PLAYER.isPlaying()
+                or self._waiter.active):
+            self._waiting_sync = Sync()
+        else:
+            self._immediate_sync()
+
+    def _play_stop(self):
+        if AVOIDANCE.wait:
+            self._waiter.set(AVOIDANCE.wait)
+        elif self._waiting_sync:
+            self._wait_done()
+
+    def _wait_done(self) -> None:
+        self._waiter.cancel()
+        self._immediate_sync()
+        self._waiting_sync = None
 
 
 if __name__ == "__main__":
