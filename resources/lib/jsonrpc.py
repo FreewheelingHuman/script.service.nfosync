@@ -10,19 +10,19 @@ class _InternalMethods:
             self._method = method
 
         @property
-        def send(self) -> str:
+        def SEND(self) -> str:
             return self._method
 
         @property
-        def recv(self) -> str:
+        def RECV(self) -> str:
             return 'Other.' + self._method
 
-    immediate_sync: Final = _Method('NFOSync.Immediate_Sync')
-    patient_sync: Final = _Method('NFOSync.Patient_Sync')
-    wait_done: Final = _Method('NFOSync.Wait_Done')
+    IMMEDIATE_SYNC: Final = _Method('NFOSync.Immediate_Sync')
+    PATIENT_SYNC: Final = _Method('NFOSync.Patient_Sync')
+    WAIT_DONE: Final = _Method('NFOSync.Wait_Done')
 
 
-INTERNAL_METHODS = _InternalMethods()
+Internal_Methods: Final = _InternalMethods()
 
 
 def request(method: str, **params):
