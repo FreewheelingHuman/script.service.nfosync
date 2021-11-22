@@ -4,7 +4,7 @@ import xbmc
 from typing import Callable, Final
 
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.addon import SETTINGS
+from resources.lib.settings import SYNC
 
 
 class _Exporter:
@@ -90,7 +90,7 @@ class _Exporter:
             return '\n' + '    ' * ilevel
 
         if len(element):
-            if element.text is None:
+            if element.text is None or element.text.strip() == '':
                 element.text = indent(level)
             for subelement in range(len(element)-1):
                 element[subelement].tail = indent(level)
