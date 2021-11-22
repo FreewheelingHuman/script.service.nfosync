@@ -1,4 +1,3 @@
-import collections
 import json
 from typing import Final
 
@@ -7,8 +6,9 @@ import xbmc
 import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
-from resources.lib.importer import Importer
-from resources.lib.addon import ADDON_ID, PLAYER, SETTINGS
+from resources.lib.addon import ADDON_ID, PLAYER
+from resources.lib.settings import TRIGGERS, AVOIDANCE, PERIODIC, STATE
+from resources.lib.sync import Sync
 
 
 class Alarm:
@@ -42,121 +42,96 @@ class Service(xbmc.Monitor):
     def __init__(self):
         super().__init__()
 
-        self._import_queue = collections.deque()
+        self._active_sync = None
+        self._waiting_sync = None
 
-        self._waiting_periodic = None
         self._periodic_trigger = Alarm(
             name='periodic.trigger',
-            command=f'NotifyAll({ADDON_ID},{jsonrpc.custom_methods.import_periodic.send})',
+            command=f'NotifyAll({ADDON_ID},{jsonrpc.INTERNAL_METHODS.patient_sync.send})',
             loop=True
         )
-        self._periodic_waiter = Alarm(
-            name='periodic.wait',
-            command=f'NotifyAll({ADDON_ID},{jsonrpc.custom_methods.periodic_wait_done.send})'
+        self._waiter = Alarm(
+            name='avoidance.wait',
+            command=f'NotifyAll({ADDON_ID},{jsonrpc.INTERNAL_METHODS.wait_done.send})'
         )
 
         # If the last scan time has never been set, we'll need to set it
-        if SETTINGS.state.last_refresh is None:
-            SETTINGS.state.last_refresh = utcdt.now()
+        if STATE.last_refresh is None:
+            STATE.last_refresh = utcdt.now()
 
-        if SETTINGS.start.enabled:
-            importer, done = Importer.start(
-                visible=SETTINGS.start.visible,
-                clean=SETTINGS.start.clean,
-                refresh=SETTINGS.start.refresh,
-                scan=SETTINGS.start.scan
-            )
+        if TRIGGERS.start:
+            sync, done = Sync.start()
             if not done:
-                self._import_queue.append(importer)
+                self._active_sync = sync
 
-        if SETTINGS.periodic.enabled:
-            self._periodic_trigger.set(SETTINGS.periodic.period)
+        self._periodic_trigger.set(PERIODIC.period)
 
         while not self.abortRequested():
             self.waitForAbort(300)
 
     def onNotification(self, sender: str, method: str, data: str) -> None:
-        if self._import_queue and method == self._import_queue[0].awaiting:
-            self._continue_importing()
+        if self._active_sync and method == self._active_sync.awaiting:
+            self._continue_sync()
 
-        elif method == jsonrpc.custom_methods.import_now.recv:
-            self._import_now_request(data)
+        elif method == jsonrpc.INTERNAL_METHODS.immediate_sync.recv:
+            self._immediate_sync()
 
-        elif method == jsonrpc.custom_methods.import_periodic.recv:
-            self._periodic_import_request()
+        elif method == jsonrpc.INTERNAL_METHODS.patient_sync.recv:
+            self._patient_sync()
 
-        elif method == jsonrpc.custom_methods.periodic_wait_done.recv:
-            self._periodic_wait_done()
+        elif method == jsonrpc.INTERNAL_METHODS.wait_done.recv:
+            self._wait_done()
 
         elif method == 'Player.OnPlay':
-            self._periodic_waiter.cancel()
+            self._waiter.cancel()
 
         elif method == 'Player.OnStop':
             self._periodic_play_stop()
 
-        elif method == 'VideoLibrary.OnUpdate' and SETTINGS.export.enabled:
+        elif method == 'VideoLibrary.OnUpdate' and TRIGGERS.update:
             self._process_update(data)
 
     def onSettingsChanged(self) -> None:
-        if self._periodic_trigger.minutes != SETTINGS.periodic.period:
-            self._periodic_trigger.set(SETTINGS.periodic.period)
+        if self._periodic_trigger.minutes != PERIODIC.period:
+            self._periodic_trigger.set(PERIODIC.period)
 
-        if self._periodic_waiter.active and self._periodic_waiter.minutes != SETTINGS.periodic.wait:
-            self._periodic_waiter.set(SETTINGS.periodic.wait)
+        if self._waiter.active and self._waiter.minutes != AVOIDANCE.wait:
+            self._waiter.set(AVOIDANCE.wait)
 
-        if (self._waiting_periodic and (not SETTINGS.periodic.avoid_play
-                                        or not SETTINGS.periodic.wait and not PLAYER.isPlaying())):
-            self._periodic_wait_done()
+        if (self._waiting_sync and (not AVOIDANCE.enabled
+                                    or not AVOIDANCE.wait and not PLAYER.isPlaying())):
+            self._wait_done()
 
     def _periodic_play_stop(self):
-        if SETTINGS.periodic.wait:
-            self._periodic_waiter.set(SETTINGS.periodic.wait)
-        elif self._waiting_periodic:
-            self._periodic_wait_done()
+        if AVOIDANCE.wait:
+            self._waiter.set(AVOIDANCE.wait)
+        elif self._waiting_sync:
+            self._wait_done()
 
-    def _import_now_request(self, data) -> None:
-        options = json.loads(data)
-        importer = Importer(
-            visible=options['visible'],
-            clean=options['clean'],
-            refresh=options['refresh'],
-            scan=options['scan'])
-        self._import_soon(importer)
-
-    def _periodic_import_request(self) -> None:
-        importer = Importer(
-            visible=SETTINGS.periodic.visible,
-            clean=SETTINGS.periodic.clean,
-            refresh=SETTINGS.periodic.refresh,
-            scan=SETTINGS.periodic.scan
-        )
-        if (SETTINGS.periodic.avoid_play and PLAYER.isPlaying()
-                or self._periodic_waiter.active):
-            self._waiting_periodic = importer
-        else:
-            self._import_soon(importer)
-
-    def _periodic_wait_done(self) -> None:
-        self._periodic_waiter.cancel()
-        self._import_soon(self._waiting_periodic)
-        self._waiting_periodic = None
-
-    def _continue_importing(self) -> None:
-        while True:
-            done = self._import_queue[0].resume()
-            if done:
-                self._import_queue.popleft()
-                if self._import_queue:
-                    continue
-            break
-
-    def _import_soon(self, importer: Importer) -> None:
-        if self._import_queue:
-            self._import_queue.append(importer)
-        else:
-            done = importer.resume()
+    def _immediate_sync(self) -> None:
+        if not self._active_sync:
+            sync, done = Sync.start()
             if not done:
-                self._import_queue.append(importer)
+                self._active_sync = sync
+
+    def _patient_sync(self) -> None:
+        if self._active_sync:
+            return
+        if (AVOIDANCE.enabled and PLAYER.isPlaying()
+                or self._waiter.active):
+            self._waiting_sync = Sync()
+        else:
+            self._immediate_sync()
+
+    def _wait_done(self) -> None:
+        self._waiter.cancel()
+        self._immediate_sync()
+        self._waiting_sync = None
+
+    def _continue_sync(self) -> None:
+        done = self._active_sync.resume()
+        if not done:
+            self._active_sync = None
 
     @staticmethod
     def _process_update(data: str) -> None:
@@ -165,7 +140,7 @@ class Service(xbmc.Monitor):
         # Always ignore added items if they aren't part a transaction because
         # refreshing an item will trigger a non-transactional update event.
         if (data.get('added') and (not data.get('transaction')
-                                   or data.get('transaction') and SETTINGS.export.ignore_added)):
+                                   or data.get('transaction') and TRIGGERS.ignore_added)):
             return
 
         item = data['item']
