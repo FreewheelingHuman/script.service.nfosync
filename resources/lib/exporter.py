@@ -116,7 +116,12 @@ class _Exporter:
         if field in self._ignored_fields:
             return
 
-        for element in self._xml.findall(field):
+        if field in self._tag_remaps:
+            tag = self._tag_remaps[field]
+        else:
+            tag = field
+
+        for element in self._xml.findall(tag):
             self._xml.remove(element)
 
         if value is None or value == '':
@@ -124,9 +129,9 @@ class _Exporter:
 
         if isinstance(value, list):
             for item in value:
-                self._append_tag(self._xml, field, str(item))
+                self._append_tag(self._xml, tag, str(item))
         else:
-            self._append_tag(self._xml, field, str(value))
+            self._append_tag(self._xml, tag, str(value))
 
     def _convert_art(self, field: str, value):
         xbmc.log(f'convert art: {field} with value {value}')
