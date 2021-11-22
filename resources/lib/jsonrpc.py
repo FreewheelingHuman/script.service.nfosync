@@ -19,7 +19,7 @@ class _InternalMethods:
 
     immediate_sync: Final = _Method('NFOSync.Immediate_Sync')
     patient_sync: Final = _Method('NFOSync.Patient_Sync')
-    wait_over: Final = _Method('NFOSync.Wait_Over')
+    wait_done: Final = _Method('NFOSync.Wait_Done')
 
 
 INTERNAL_METHODS = _InternalMethods()
