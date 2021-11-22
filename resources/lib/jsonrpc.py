@@ -4,7 +4,7 @@ from typing import Final
 import xbmc
 
 
-class _CustomMethods:
+class _InternalMethods:
     class _Method:
         def __init__(self, method: str):
             self._method = method
@@ -17,12 +17,12 @@ class _CustomMethods:
         def recv(self) -> str:
             return 'Other.' + self._method
 
-    import_now: Final = _Method('NFOSync.Import_Now')
-    import_periodic: Final = _Method('NFOSync.Import_Periodic')
-    periodic_wait_done: Final = _Method('NFOSync.Periodic_Wait_Done')
+    immediate_sync: Final = _Method('NFOSync.Immediate_Sync')
+    patient_sync: Final = _Method('NFOSync.Patient_Sync')
+    wait_over: Final = _Method('NFOSync.Wait_Over')
 
 
-custom_methods = _CustomMethods()
+INTERNAL_METHODS = _InternalMethods()
 
 
 def request(method: str, **params):
