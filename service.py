@@ -104,7 +104,7 @@ class Service(xbmc.Monitor):
 
     def _continue_sync(self) -> None:
         done = self._active_sync.resume()
-        if not done:
+        if done:
             self._active_sync = None
 
     def _immediate_sync(self) -> None:
