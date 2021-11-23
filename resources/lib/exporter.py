@@ -8,6 +8,7 @@ from typing import Callable, Final
 import xbmcvfs
 
 import resources.lib.jsonrpc as jsonrpc
+from resources.lib.settings import SYNC
 
 
 class _Exporter:
@@ -98,7 +99,10 @@ class _Exporter:
         if not ok:
             return
         if self._xml is None:
-            self._xml = ElementTree.Element(self._media_type.root_tag)
+            if SYNC.create_nfo:
+                self._xml = ElementTree.Element(self._media_type.root_tag)
+            else:
+                return
 
         parameters['properties'] = self._media_type.details
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
