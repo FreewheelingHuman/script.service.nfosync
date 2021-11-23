@@ -1,4 +1,5 @@
 import collections
+import urllib.parse
 import xml.etree.ElementTree as ElementTree
 import xbmc
 from typing import Callable, Final
@@ -13,21 +14,21 @@ class _Exporter:
         'plotoutline', 'originaltitle', 'lastplayed', 'playcount', 'writer',
         'studio', 'mpaa', 'cast', 'country', 'runtime', 'setid', 'showlink',
         'streamdetails', 'top250', 'fanart', 'sorttitle', 'dateadded', 'tag',
-        'art', 'userrating', 'ratings', 'premiered', 'uniqueid'
+        'art', 'userrating', 'ratings', 'premiered', 'uniqueid', 'file'
     ]
 
     _episode_fields: Final = [
         'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
         'director', 'season', 'episode', 'originaltitle', 'showtitle', 'cast',
         'streamdetails', 'lastplayed', 'fanart', 'dateadded', 'uniqueid', 'art',
-        'specialsortseason', 'specialsortepisode', 'userrating', 'ratings'
+        'specialsortseason', 'specialsortepisode', 'userrating', 'ratings', 'file'
     ]
 
     _tvshow_fields: Final = [
         'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
         'episode', 'premiered', 'lastplayed', 'fanart', 'originaltitle',
         'sorttitle', 'season', 'dateadded', 'tag', 'art', 'userrating',
-        'ratings', 'runtime', 'uniqueid'
+        'ratings', 'runtime', 'uniqueid', 'file'
     ]
 
     _TypeInfo = collections.namedtuple('_TypeInfo', ['method', 'id_name', 'details', 'container', 'root_tag'])
@@ -59,7 +60,7 @@ class _Exporter:
     # so far as I can see. However, not sure if it is always the same as
     # title and isn't directly exportable, so rather than mapping label
     # to title and not requesting title, we're ignoring it.
-    _ignored_fields = ['label', 'movieid', 'episodeid', 'tvshowid']
+    _ignored_fields = ['label', 'file', 'movieid', 'episodeid', 'tvshowid']
 
     _tag_remaps = {
         'plotoutline': 'outline',
@@ -86,20 +87,22 @@ class _Exporter:
 
         self._xml = ElementTree.Element(self._media_type.root_tag)
 
-    def export(self):
+    def export(self) -> None:
         xbmc.log('PLACEHOLDER: Export has been triggered.')
 
         parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
-        result = jsonrpc.request(self._media_type.method, **parameters)
+        details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
 
-        for field in result[self._media_type.container]:
+        xbmc.log(f'Source JSON:\n{details}')
+
+        for field in details:
             handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
-            handler(field, result[self._media_type.container][field])
+            handler(field, details[field])
 
         self._pretty_print(self._xml)
         xbmc.log(f'Behold! XML:\n{ElementTree.tostring(self._xml, encoding="unicode")}')
 
-    def _pretty_print(self, element, level=1):
+    def _pretty_print(self, element, level=1) -> None:
         def indent(ilevel):
             return '\n' + '    ' * ilevel
 
@@ -112,7 +115,7 @@ class _Exporter:
             for subelement in element:
                 self._pretty_print(subelement, level+1)
 
-    def _convert_generic(self, field: str, value):
+    def _convert_generic(self, field: str, value) -> None:
         if field in self._ignored_fields:
             return
 
@@ -129,37 +132,50 @@ class _Exporter:
 
         if isinstance(value, list):
             for item in value:
-                self._append_tag(self._xml, tag, str(item))
+                self._append_tag(self._xml, tag, item)
         else:
-            self._append_tag(self._xml, tag, str(value))
+            self._append_tag(self._xml, tag, value)
 
-    def _convert_art(self, field: str, value):
+    def _convert_art(self, field: str, value) -> None:
         xbmc.log(f'convert art: {field} with value {value}')
 
-    def _convert_cast(self, field: str, value):
-        xbmc.log(f'convert cast: {field} with value {value}')
+    def _convert_cast(self, field: str, actors) -> None:
+        for actor in actors:
+            actor_element = self._append_tag(self._xml, 'actor')
+            self._append_tag(actor_element, 'name', actor['name'])
+            if 'role' in actor:
+                self._append_tag(actor_element, 'role', actor['role'])
+            if 'order' in actor:
+                self._append_tag(actor_element, 'order', actor['order'])
+            if 'thumbnail' in actor:
+                thumbnail = actor['thumbnail'].replace('image://', '', 1)
+                thumbnail = urllib.parse.unquote(thumbnail)
+                self._append_tag(actor_element, 'thumb', thumbnail)
 
-    def _convert_fanart(self, field: str, value):
+    def _convert_fanart(self, field: str, value) -> None:
         xbmc.log(f'convert fanart: {field} with value {value}')
 
-    def _convert_ratings(self, field: str, value):
+    def _convert_ratings(self, field: str, value) -> None:
         xbmc.log(f'convert ratings: {field} with value {value}')
 
-    def _convert_set(self, field: str, value):
+    def _convert_set(self, field: str, value) -> None:
         xbmc.log(f'convert set: {field} with value {value}')
 
-    def _convert_streamdetails(self, field: str, value):
+    def _convert_streamdetails(self, field: str, value) -> None:
         xbmc.log(f'convert streamdetails: {field} with value {value}')
 
-    def _conver_trailer(self, field: str, value):
+    def _conver_trailer(self, field: str, value) -> None:
         xbmc.log(f'convert trailer: {field} with value {value}')
 
-    def _convert_uniqueid(self, field: str, value):
+    def _convert_uniqueid(self, field: str, value) -> None:
         xbmc.log(f'convert uniqueid: {field} with value {value}')
 
-    def _append_tag(self, parent: ElementTree.Element, tag: str, text: str):
+    @staticmethod
+    def _append_tag(parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
-        element.text = text
+        if text is not None:
+            element.text = str(text)
+        return element
 
 
 def export(media_id: int, media_type: str):
