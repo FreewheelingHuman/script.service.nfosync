@@ -1,11 +1,13 @@
 import collections
+import os
 import urllib.parse
 import xml.etree.ElementTree as ElementTree
 import xbmc
 from typing import Callable, Final
 
+import xbmcvfs
+
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.settings import SYNC
 
 
 class _Exporter:
@@ -14,21 +16,21 @@ class _Exporter:
         'plotoutline', 'originaltitle', 'lastplayed', 'playcount', 'writer',
         'studio', 'mpaa', 'cast', 'country', 'runtime', 'setid', 'showlink',
         'streamdetails', 'top250', 'fanart', 'sorttitle', 'dateadded', 'tag',
-        'art', 'userrating', 'ratings', 'premiered', 'uniqueid', 'file'
+        'art', 'userrating', 'ratings', 'premiered', 'uniqueid'
     ]
 
     _episode_fields: Final = [
         'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
         'director', 'season', 'episode', 'originaltitle', 'showtitle', 'cast',
         'streamdetails', 'lastplayed', 'fanart', 'dateadded', 'uniqueid', 'art',
-        'specialsortseason', 'specialsortepisode', 'userrating', 'ratings', 'file'
+        'specialsortseason', 'specialsortepisode', 'userrating', 'ratings'
     ]
 
     _tvshow_fields: Final = [
         'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
         'episode', 'premiered', 'lastplayed', 'fanart', 'originaltitle',
         'sorttitle', 'season', 'dateadded', 'tag', 'art', 'userrating',
-        'ratings', 'runtime', 'uniqueid', 'file'
+        'ratings', 'runtime', 'uniqueid'
     ]
 
     _TypeInfo = collections.namedtuple('_TypeInfo', ['method', 'id_name', 'details', 'container', 'root_tag'])
@@ -85,16 +87,22 @@ class _Exporter:
         self._media_id = media_id
         self._media_type = self._type_info[media_type]
 
-        self._xml = ElementTree.Element(self._media_type.root_tag)
+        self._xml = None
 
     def export(self) -> None:
         xbmc.log('PLACEHOLDER: Export has been triggered.')
 
-        parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
+        parameters = {self._media_type.id_name: self._media_id, 'properties': ['file']}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
+        ok = self._import_nfo(details['file'])
+        if not ok:
+            return
+        if self._xml is None:
+            self._xml = ElementTree.Element(self._media_type.root_tag)
 
+        parameters['properties'] = self._media_type.details
+        details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
         xbmc.log(f'Source JSON:\n{details}')
-
         for field in details:
             handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
             handler(field, details[field])
@@ -176,6 +184,53 @@ class _Exporter:
         if text is not None:
             element.text = str(text)
         return element
+
+    def _import_nfo(self, media_path: str) -> bool:
+        if media_path is None or media_path == '':
+            return False
+
+        nfo_path = None
+
+        if self._media_type == self._type_info['movie']:
+            filename_nfo = self._replace_extension(media_path, '.nfo')
+            movie_nfo = self._replace_tail(media_path, 'movie.nfo')
+            if xbmcvfs.exists(filename_nfo):
+                nfo_path = filename_nfo
+            elif xbmcvfs.exists(movie_nfo):
+                nfo_path = movie_nfo
+        elif self._media_type == self._type_info['episode']:
+            filename_nfo = self._replace_extension(media_path, '.nfo')
+            if xbmcvfs.exists(filename_nfo):
+                nfo_path = filename_nfo
+        elif self._media_type == self._type_info['tvshow']:
+            tvshow_nfo = xbmcvfs.validatePath(media_path + '/tvshow.nfo')
+            if xbmcvfs.exists(tvshow_nfo):
+                nfo_path = tvshow_nfo
+
+        if nfo_path is None:
+            return True
+
+        with xbmcvfs.File(nfo_path) as file:
+            nfo_contents = file.read()
+
+        if nfo_contents == '':
+            xbmc.log(f'NFO Sync - Unable to read NFO or file empty: {nfo_path}')
+            return False
+
+        try:
+            self._xml = ElementTree.fromstring(nfo_contents)
+        except ElementTree.ParseError as error:
+            xbmc.log(f'NFO Sync - Unable to parse NFO file "{nfo_path}" due to error: {error}')
+            return False
+        return True
+
+    @staticmethod
+    def _replace_extension(path: str, extension: str) -> str:
+        return os.path.splitext(path)[0] + extension
+
+    @staticmethod
+    def _replace_tail(path: str, new_tail: str) -> str:
+        return os.path.split(path)[0] + new_tail
 
 
 def export(media_id: int, media_type: str):
