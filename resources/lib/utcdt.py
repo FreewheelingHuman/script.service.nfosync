@@ -2,20 +2,20 @@ import datetime
 import typing
 
 
-Dt = typing.NewType('Dt', datetime.datetime)
+UtcDt = typing.NewType('UtcDt', datetime.datetime)
 
 
-def fromisoformat(date_string: str) -> Dt:
+def fromisoformat(date_string: str) -> UtcDt:
     dt = datetime.datetime.fromisoformat(date_string)
     dt = dt.replace(tzinfo=datetime.timezone.utc)
-    return typing.cast(Dt, dt)
+    return typing.cast(UtcDt, dt)
 
 
-def fromtimestamp(timestamp: float) -> Dt:
+def fromtimestamp(timestamp: float) -> UtcDt:
     dt = datetime.datetime.fromtimestamp(timestamp, tz=datetime.timezone.utc)
-    return typing.cast(Dt, dt)
+    return typing.cast(UtcDt, dt)
 
 
-def now() -> Dt:
+def now() -> UtcDt:
     dt = datetime.datetime.now(datetime.timezone.utc)
-    return typing.cast(Dt, dt)
+    return typing.cast(UtcDt, dt)

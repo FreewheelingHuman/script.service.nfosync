@@ -87,7 +87,7 @@ class Sync:
     def _scan(self) -> None:
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
 
-    def _file_warrants_refresh(self, file: str, last_scan: utcdt.Dt) -> bool:
+    def _file_warrants_refresh(self, file: str, last_scan: utcdt.UtcDt) -> bool:
         if not xbmcvfs.exists(file):
             return False
 
@@ -107,7 +107,7 @@ class Sync:
 
         return False
 
-    def _need_refresh_episode(self, file: str, last_scan: utcdt.Dt) -> bool:
+    def _need_refresh_episode(self, file: str, last_scan: utcdt.UtcDt) -> bool:
         # Ignore missing files
         if not xbmcvfs.exists(file):
             return False
@@ -115,7 +115,7 @@ class Sync:
         filename_nfo = os.path.splitext(file)[0] + '.nfo'
         return self._file_warrants_refresh(filename_nfo, last_scan)
 
-    def _need_refresh_movie(self, file: str, last_scan: utcdt.Dt) -> bool:
+    def _need_refresh_movie(self, file: str, last_scan: utcdt.UtcDt) -> bool:
         # Ignore missing files
         if not xbmcvfs.exists(file):
             return False
@@ -133,7 +133,7 @@ class Sync:
 
         return False
 
-    def _need_refresh_tv_show(self, file: str, last_scan: utcdt.Dt) -> bool:
+    def _need_refresh_tv_show(self, file: str, last_scan: utcdt.UtcDt) -> bool:
         # Ignore missing files
         if not xbmcvfs.exists(file):
             return False

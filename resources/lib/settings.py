@@ -109,10 +109,10 @@ class _State:
         def __init__(self):
             self._cache = json.loads(ADDON.getSettingString(self._refresh_exceptions))
 
-        def __getitem__(self, file: str) -> utcdt.Dt:
+        def __getitem__(self, file: str) -> utcdt.UtcDt:
             return utcdt.fromisoformat(self._cache[file])
 
-        def __setitem__(self, file: str, timestamp: utcdt.Dt) -> None:
+        def __setitem__(self, file: str, timestamp: utcdt.UtcDt) -> None:
             self._cache[file] = timestamp.isoformat(timespec='seconds')
             ADDON.setSettingString(self._refresh_exceptions, json.dumps(self._cache))
 
@@ -124,7 +124,7 @@ class _State:
         self._refresh_exceptions_wrapper: Final = self._RefreshExceptions()
 
     @property
-    def last_refresh(self) -> Optional[utcdt.Dt]:
+    def last_refresh(self) -> Optional[utcdt.UtcDt]:
         iso_string = ADDON.getSetting(self._last_refresh)
         if iso_string == '':
             return None
@@ -134,7 +134,7 @@ class _State:
         return last_scan
 
     @last_refresh.setter
-    def last_refresh(self, value: utcdt.Dt) -> None:
+    def last_refresh(self, value: utcdt.UtcDt) -> None:
         ADDON.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
 
     @property
