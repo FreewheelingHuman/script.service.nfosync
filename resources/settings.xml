@@ -57,13 +57,6 @@
                     <control type="toggle" />
                 </setting>
             </group>
-            <group id="sync_misc" label="32018">
-                <setting id="sync.visible" type="boolean" label="32023" help="">
-                    <level>0</level>
-                    <default>true</default>
-                    <control type="toggle" />
-                </setting>
-            </group>
             <group id="sync_tags" label="32024">
                 <setting id="sync.actor" type="string" label="32025" help="32026">
                     <level>0</level>
@@ -80,7 +73,6 @@
                     <control type="list" format="string">
                         <heading>32025</heading>
                     </control>
-
                 </setting>
             </group>
         </category>
@@ -153,6 +145,15 @@
                     <dependencies>
 	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
                     </dependencies>
+                </setting>
+            </group>
+        </category>
+        <category id="others" label="32018" help="">
+            <group id="misc" label="32018">
+                <setting id="sync.visible" type="boolean" label="32023" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
                 </setting>
             </group>
         </category>
