@@ -6,14 +6,14 @@ import xbmc
 import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
-from resources.lib.addon import ADDON_ID, PLAYER
+from resources.lib.addon import ADDON, PLAYER
 from resources.lib.settings import TRIGGERS, AVOIDANCE, PERIODIC, STATE
 from resources.lib.sync import Sync
 
 
 class Alarm:
     def __init__(self, name: str, command: str, loop: bool = False):
-        self._name: Final = f'{ADDON_ID}.{name}'
+        self._name: Final = f'{ADDON.id}.{name}'
         self._command: Final = command
         self._loop: Final = ',loop' if loop else ''
 
@@ -47,12 +47,12 @@ class Service(xbmc.Monitor):
 
         self._periodic_trigger = Alarm(
             name='periodic.trigger',
-            command=f'NotifyAll({ADDON_ID},{jsonrpc.INTERNAL_METHODS.patient_sync.send})',
+            command=f'NotifyAll({ADDON.id},{jsonrpc.INTERNAL_METHODS.patient_sync.send})',
             loop=True
         )
         self._waiter = Alarm(
             name='avoidance.wait',
-            command=f'NotifyAll({ADDON_ID},{jsonrpc.INTERNAL_METHODS.wait_done.send})'
+            command=f'NotifyAll({ADDON.id},{jsonrpc.INTERNAL_METHODS.wait_done.send})'
         )
 
         # If the last scan time has never been set, we'll need to set it
