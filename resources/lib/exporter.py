@@ -240,12 +240,12 @@ class _Exporter:
         nfo_path = None
 
         if self._media_type == self._type_info['movie']:
-            filename_nfo = self._replace_extension(media_path, '.nfo')
             movie_nfo = self._replace_tail(media_path, 'movie.nfo')
-            if xbmcvfs.exists(filename_nfo):
-                nfo_path = filename_nfo
-            elif xbmcvfs.exists(movie_nfo):
+            filename_nfo = self._replace_extension(media_path, '.nfo')
+            if xbmcvfs.exists(movie_nfo):
                 nfo_path = movie_nfo
+            elif xbmcvfs.exists(filename_nfo):
+                nfo_path = filename_nfo
 
         elif self._media_type == self._type_info['episode']:
             filename_nfo = self._replace_extension(media_path, '.nfo')
