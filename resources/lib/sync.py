@@ -60,8 +60,7 @@ class Sync:
         importer = cls()
         return importer, importer.resume()
 
-    @staticmethod
-    def _clean() -> None:
+    def _clean(self) -> None:
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
 
     def _refresh(self) -> None:
@@ -85,12 +84,10 @@ class Sync:
 
         STATE.last_refresh = scan_time
 
-    @staticmethod
-    def _scan() -> None:
+    def _scan(self) -> None:
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
 
-    @staticmethod
-    def _file_warrants_refresh(file: str, last_scan: utcdt.Dt) -> bool:
+    def _file_warrants_refresh(self, file: str, last_scan: utcdt.Dt) -> bool:
         if not xbmcvfs.exists(file):
             return False
 

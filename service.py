@@ -113,8 +113,7 @@ class Service(xbmc.Monitor):
             if not done:
                 self._active_sync = sync
 
-    @staticmethod
-    def _library_update(data: str) -> None:
+    def _library_update(self, data: str) -> None:
         data = json.loads(data)
 
         # Always ignore added items if they aren't part a transaction because

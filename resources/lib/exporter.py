@@ -209,29 +209,26 @@ class _Exporter:
                 self._xml.append(element)
             self._update_actor(element, actor)
 
-    @classmethod
-    def _update_actor(cls, element, details) -> None:
+    def _update_actor(self, element, details) -> None:
         if 'name' in details:
-            cls._set_tag(element, 'name', details['name'])
+            self._set_tag(element, 'name', details['name'])
         if 'role' in details:
-            cls._set_tag(element, 'role', details['role'])
+            self._set_tag(element, 'role', details['role'])
         if 'order' in details:
-            cls._set_tag(element, 'order', details['order'])
+            self._set_tag(element, 'order', details['order'])
         if 'thumbnail' in details:
-            cls._set_tag(element, 'thumb', cls._decode_image(details['thumbnail']))
+            self._set_tag(element, 'thumb', self._decode_image(details['thumbnail']))
 
-    @staticmethod
-    def _add_tag(parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
+    def _add_tag(self, parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
         if text is not None:
             element.text = str(text)
         return element
 
-    @classmethod
-    def _set_tag(cls, parent: ElementTree.Element, tag: str, text: str) -> ElementTree.Element:
+    def _set_tag(self, parent: ElementTree.Element, tag: str, text: str) -> ElementTree.Element:
         element = parent.find(tag)
         if element is None:
-            element = cls._add_tag(parent, tag, text)
+            element = self._add_tag(parent, tag, text)
         else:
             element.text = str(text)
         return element
