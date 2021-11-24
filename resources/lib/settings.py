@@ -11,6 +11,13 @@ class MovieNfoType(enum.Enum):
     FILENAME = 'filename'
 
 
+class ActorTagOption(enum.Enum):
+    SKIP = 'skip'
+    UPDATE = 'update_by_name'
+    OVERWRITE = 'overwrite'
+    MERGE = 'merge_by_name'
+
+
 class _Sync:
 
     @property
@@ -44,6 +51,10 @@ class _Sync:
     @property
     def visible(self) -> bool:
         return ADDON.getSettingBool('sync.visible')
+
+    @property
+    def actor(self) -> ActorTagOption:
+        return ActorTagOption(ADDON.getSettingString('sync.actor'))
 
 
 class _Triggers:
