@@ -3,6 +3,8 @@ from typing import Final
 
 import xbmc
 
+from resources.lib.addon import ADDON
+
 
 class _InternalMethods:
     class _Method:
@@ -17,9 +19,9 @@ class _InternalMethods:
         def recv(self) -> str:
             return 'Other.' + self._method
 
-    immediate_sync: Final = _Method('NFOSync.Immediate_Sync')
-    patient_sync: Final = _Method('NFOSync.Patient_Sync')
-    wait_done: Final = _Method('NFOSync.Wait_Done')
+    immediate_sync: Final = _Method(f'{ADDON.json_name}.Immediate_Sync')
+    patient_sync: Final = _Method(f'{ADDON.json_name}.Patient_Sync')
+    wait_done: Final = _Method(f'{ADDON.json_name}.Wait_Done')
 
 
 INTERNAL_METHODS = _InternalMethods()
