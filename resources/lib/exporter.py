@@ -8,7 +8,7 @@ from typing import Callable, Final
 import xbmcvfs
 
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.settings import SYNC
+from resources.lib.settings import SYNC, ActorTagOption
 
 
 class _Exporter:
@@ -144,25 +144,30 @@ class _Exporter:
 
         if isinstance(value, list):
             for item in value:
-                self._append_tag(self._xml, tag, item)
+                self._add_tag(self._xml, tag, item)
         else:
-            self._append_tag(self._xml, tag, value)
+            self._add_tag(self._xml, tag, value)
 
     def _convert_art(self, field: str, value) -> None:
         xbmc.log(f'convert art: {field} with value {value}')
 
     def _convert_cast(self, field: str, actors) -> None:
-        for actor in actors:
-            actor_element = self._append_tag(self._xml, 'actor')
-            self._append_tag(actor_element, 'name', actor['name'])
-            if 'role' in actor:
-                self._append_tag(actor_element, 'role', actor['role'])
-            if 'order' in actor:
-                self._append_tag(actor_element, 'order', actor['order'])
-            if 'thumbnail' in actor:
-                thumbnail = actor['thumbnail'].replace('image://', '', 1)
-                thumbnail = urllib.parse.unquote(thumbnail)
-                self._append_tag(actor_element, 'thumb', thumbnail)
+        actor_bin = ElementTree.Element('bucket')
+        existing_actors = self._xml.findall('actor')
+
+        if existing_actors and SYNC.actor == ActorTagOption.SKIP:
+            return
+
+        if SYNC.actor != ActorTagOption.OVERWRITE:
+            actor_bin.extend(existing_actors)
+
+        for actor in existing_actors:
+            self._xml.remove(actor)
+
+        if SYNC.actor == ActorTagOption.UPDATE:
+            self._update_cast(actors, actor_bin)
+        else:
+            self._merge_cast(actors, actor_bin)
 
     def _convert_fanart(self, field: str, value) -> None:
         xbmc.log(f'convert fanart: {field} with value {value}')
@@ -182,10 +187,47 @@ class _Exporter:
     def _convert_uniqueid(self, field: str, value) -> None:
         xbmc.log(f'convert uniqueid: {field} with value {value}')
 
+    def _update_cast(self, new_actors: list, old_actors: ElementTree.Element):
+        for element in old_actors:
+            self._xml.append(element)
+            actor_name = element.find('name').text
+            details = next((a for a in new_actors if a['name'] == actor_name), None)
+            if details is not None:
+                self._update_actor(element, details)
+
+    def _merge_cast(self, new_actors: list, old_actors: ElementTree.Element):
+        for actor in new_actors:
+            element = old_actors.find(f'*/[name=\'{actor["name"]}\']')
+            if element is None:
+                element = self._add_tag(self._xml, 'actor')
+            else:
+                self._xml.append(element)
+            self._update_actor(element, actor)
+
+    @classmethod
+    def _update_actor(cls, element, details) -> None:
+        if 'name' in details:
+            cls._set_tag(element, 'name', details['name'])
+        if 'role' in details:
+            cls._set_tag(element, 'role', details['role'])
+        if 'order' in details:
+            cls._set_tag(element, 'order', details['order'])
+        if 'thumbnail' in details:
+            cls._set_tag(element, 'thumb', cls._decode_image(details['thumbnail']))
+
     @staticmethod
-    def _append_tag(parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
+    def _add_tag(parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
         if text is not None:
+            element.text = str(text)
+        return element
+
+    @classmethod
+    def _set_tag(cls, parent: ElementTree.Element, tag: str, text: str) -> ElementTree.Element:
+        element = parent.find(tag)
+        if element is None:
+            element = cls._add_tag(parent, tag, text)
+        else:
             element.text = str(text)
         return element
 
@@ -202,10 +244,12 @@ class _Exporter:
                 nfo_path = filename_nfo
             elif xbmcvfs.exists(movie_nfo):
                 nfo_path = movie_nfo
+
         elif self._media_type == self._type_info['episode']:
             filename_nfo = self._replace_extension(media_path, '.nfo')
             if xbmcvfs.exists(filename_nfo):
                 nfo_path = filename_nfo
+
         elif self._media_type == self._type_info['tvshow']:
             tvshow_nfo = xbmcvfs.validatePath(media_path + '/tvshow.nfo')
             if xbmcvfs.exists(tvshow_nfo):
@@ -235,6 +279,12 @@ class _Exporter:
     @staticmethod
     def _replace_tail(path: str, new_tail: str) -> str:
         return os.path.split(path)[0] + new_tail
+
+    @staticmethod
+    def _decode_image(path: str) -> str:
+        decoded_path = path.replace('image://', '', 1)
+        decoded_path = urllib.parse.unquote(decoded_path)
+        return decoded_path
 
 
 def export(media_id: int, media_type: str):
