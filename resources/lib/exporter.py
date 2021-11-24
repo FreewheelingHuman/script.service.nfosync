@@ -1,12 +1,11 @@
 import collections
-import os
-import urllib.parse
 import xml.etree.ElementTree as ElementTree
 import xbmc
 from typing import Callable, Final
 
 import xbmcvfs
 
+import resources.lib.filetools as filetools
 import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import ADDON
 from resources.lib.settings import SYNC, ActorTagOption
@@ -217,7 +216,7 @@ class _Exporter:
         if 'order' in details:
             self._set_tag(element, 'order', details['order'])
         if 'thumbnail' in details:
-            self._set_tag(element, 'thumb', self._decode_image(details['thumbnail']))
+            self._set_tag(element, 'thumb', filetools.decode_image(details['thumbnail']))
 
     def _add_tag(self, parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
@@ -240,22 +239,11 @@ class _Exporter:
         nfo_path = None
 
         if self._media_type == self._type_info['movie']:
-            movie_nfo = self._replace_tail(media_path, 'movie.nfo')
-            filename_nfo = self._replace_extension(media_path, '.nfo')
-            if xbmcvfs.exists(movie_nfo):
-                nfo_path = movie_nfo
-            elif xbmcvfs.exists(filename_nfo):
-                nfo_path = filename_nfo
-
+            nfo_path = filetools.get_movie_nfo(media_path)
         elif self._media_type == self._type_info['episode']:
-            filename_nfo = self._replace_extension(media_path, '.nfo')
-            if xbmcvfs.exists(filename_nfo):
-                nfo_path = filename_nfo
-
+            nfo_path = filetools.get_episode_nfo(media_path)
         elif self._media_type == self._type_info['tvshow']:
-            tvshow_nfo = xbmcvfs.validatePath(media_path + '/tvshow.nfo')
-            if xbmcvfs.exists(tvshow_nfo):
-                nfo_path = tvshow_nfo
+            nfo_path = filetools.get_tvshow_nfo(media_path)
 
         if nfo_path is None:
             return
@@ -270,20 +258,6 @@ class _Exporter:
             self._xml = ElementTree.fromstring(nfo_contents)
         except ElementTree.ParseError as error:
             raise _ExportFailure(f'Unable to parse NFO file "{nfo_path}" due to error: {error}')
-
-    @staticmethod
-    def _replace_extension(path: str, extension: str) -> str:
-        return os.path.splitext(path)[0] + extension
-
-    @staticmethod
-    def _replace_tail(path: str, new_tail: str) -> str:
-        return os.path.split(path)[0] + new_tail
-
-    @staticmethod
-    def _decode_image(path: str) -> str:
-        decoded_path = path.replace('image://', '', 1)
-        decoded_path = urllib.parse.unquote(decoded_path)
-        return decoded_path
 
 
 def export(media_id: int, media_type: str):
