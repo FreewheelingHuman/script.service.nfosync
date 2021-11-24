@@ -64,6 +64,25 @@
                     <control type="toggle" />
                 </setting>
             </group>
+            <group id="sync_tags" label="32024">
+                <setting id="sync.actor" type="string" label="32025" help="32026">
+                    <level>0</level>
+                    <default>skip</default>
+                    <constraints>
+                        <options>
+                            <option label="32028">skip</option>
+                            <option label="32042">update_by_name</option>
+                            <option label="32040">overwrite</option>
+                            <option label="32041">merge_by_name</option>
+                        </options>
+                        <allowempty>false</allowempty>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>32025</heading>
+                    </control>
+
+                </setting>
+            </group>
         </category>
         <category id="when" label="32004">
             <group id="triggers" label="32032">

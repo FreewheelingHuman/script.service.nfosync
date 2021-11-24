@@ -106,17 +106,30 @@ msgctxt "#32023"
 msgid "Display sync progress"
 msgstr ""
 
-# 32024 - removed, no longer in use
+msgctxt "#32024"
+msgid "Tag-specific Options"
+msgstr ""
 
-# 32025 - removed, no longer in use
+msgctxt "#32025"
+msgid "Actor tag export handling"
+msgstr ""
 
-# 32026 - removed, no longer in use
+msgctxt "#32026"
+msgid ""
+"What to do when exporting cast info to an NFO that already has it. "
+"Overwrite, but merge: keep any NFO-only tags for actors that match, "
+"but non-matching actors will be removed entirely. Update existing tags: "
+"will update existing actor tags but will not add/remove actors. All "
+"matching is based on exact names."
+msgstr ""
 
 msgctxt "#32027"
 msgid "Refresh exceptions in JSON"
 msgstr ""
 
-# 32028 - removed, no longer in use
+msgctxt "#32028"
+msgid "Leave existing tags"
+msgstr ""
 
 msgctxt "#32029"
 msgid "<file name>.nfo"
@@ -160,4 +173,16 @@ msgstr ""
 
 msgctxt "#32039"
 msgid "Min: 1, Max: 168 (1 week)"
+msgstr ""
+
+msgctxt "#32040"
+msgid "Overwrite existing tags"
+msgstr ""
+
+msgctxt "#32041"
+msgid "Overwrite, but merge existing info"
+msgstr ""
+
+msgctxt "#32042"
+msgid "Update existing tags"
 msgstr ""
