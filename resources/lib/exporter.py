@@ -8,7 +8,12 @@ from typing import Callable, Final
 import xbmcvfs
 
 import resources.lib.jsonrpc as jsonrpc
+from resources.lib.addon import ADDON
 from resources.lib.settings import SYNC, ActorTagOption
+
+
+class _ExportFailure(Exception):
+    pass
 
 
 class _Exporter:
@@ -88,6 +93,7 @@ class _Exporter:
         self._media_id = media_id
         self._media_type = self._type_info[media_type]
 
+        self._file = None
         self._xml = None
 
     def export(self) -> None:
@@ -95,16 +101,15 @@ class _Exporter:
 
         parameters = {self._media_type.id_name: self._media_id, 'properties': ['file']}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
-        ok = self._import_nfo(details['file'])
-        if not ok:
-            return
+        self._file = details['file']
+        self._import_nfo(self._file)
         if self._xml is None:
             if SYNC.create_nfo:
                 self._xml = ElementTree.Element(self._media_type.root_tag)
             else:
                 return
 
-        parameters['properties'] = self._media_type.details
+        parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
         xbmc.log(f'Source JSON:\n{details}')
         for field in details:
@@ -231,9 +236,9 @@ class _Exporter:
             element.text = str(text)
         return element
 
-    def _import_nfo(self, media_path: str) -> bool:
+    def _import_nfo(self, media_path: str) -> None:
         if media_path is None or media_path == '':
-            return False
+            raise _ExportFailure(f'Empty media path for library id "{self._media_id}"')
 
         nfo_path = None
 
@@ -256,21 +261,18 @@ class _Exporter:
                 nfo_path = tvshow_nfo
 
         if nfo_path is None:
-            return True
+            return
 
         with xbmcvfs.File(nfo_path) as file:
             nfo_contents = file.read()
 
         if nfo_contents == '':
-            xbmc.log(f'NFO Sync - Unable to read NFO or file empty: {nfo_path}')
-            return False
+            raise _ExportFailure(f'Unable to read NFO or file empty - "{nfo_path}"')
 
         try:
             self._xml = ElementTree.fromstring(nfo_contents)
         except ElementTree.ParseError as error:
-            xbmc.log(f'NFO Sync - Unable to parse NFO file "{nfo_path}" due to error: {error}')
-            return False
-        return True
+            raise _ExportFailure(f'Unable to parse NFO file "{nfo_path}" due to error: {error}')
 
     @staticmethod
     def _replace_extension(path: str, extension: str) -> str:
@@ -288,5 +290,7 @@ class _Exporter:
 
 
 def export(media_id: int, media_type: str):
-    exporter = _Exporter(media_id, media_type)
-    exporter.export()
+    try:
+        _Exporter(media_id, media_type).export()
+    except _ExportFailure as failure:
+        ADDON.log(failure)
