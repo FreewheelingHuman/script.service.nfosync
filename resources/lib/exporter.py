@@ -20,20 +20,20 @@ class _Exporter:
         'title', 'genre', 'year', 'director', 'trailer', 'tagline', 'plot',
         'plotoutline', 'originaltitle', 'lastplayed', 'playcount', 'writer',
         'studio', 'mpaa', 'cast', 'country', 'runtime', 'setid', 'showlink',
-        'streamdetails', 'top250', 'fanart', 'sorttitle', 'dateadded', 'tag',
+        'streamdetails', 'top250', 'sorttitle', 'dateadded', 'tag',
         'art', 'userrating', 'ratings', 'premiered', 'uniqueid'
     ]
 
     _episode_fields: Final = [
         'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
         'director', 'season', 'episode', 'originaltitle', 'showtitle', 'cast',
-        'streamdetails', 'lastplayed', 'fanart', 'dateadded', 'uniqueid', 'art',
+        'streamdetails', 'lastplayed', 'dateadded', 'uniqueid', 'art',
         'specialsortseason', 'specialsortepisode', 'userrating', 'ratings'
     ]
 
     _tvshow_fields: Final = [
         'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
-        'episode', 'premiered', 'lastplayed', 'fanart', 'originaltitle',
+        'episode', 'premiered', 'lastplayed', 'originaltitle',
         'sorttitle', 'season', 'dateadded', 'tag', 'art', 'userrating',
         'ratings', 'runtime', 'uniqueid'
     ]
@@ -81,12 +81,11 @@ class _Exporter:
         self._handlers: Final = {
             'art': self._convert_art,
             'cast': self._convert_cast,
-            'fanart': self._convert_fanart,
             'ratings': self._convert_ratings,
             'setid': self._convert_set,
             'streamdetails': self._convert_streamdetails,
             'uniqueid': self._convert_uniqueid,
-            'trailer': self._conver_trailer
+            'trailer': self._convert_trailer
         }
 
         self._media_id = media_id
@@ -156,33 +155,13 @@ class _Exporter:
         for aspect, coded_path in value.items():
             path = filetools.decode_image(coded_path)
 
-            if path == 'DefaultVideo.png' or path == 'DefaultFolder.png':
+            if self._is_ignored_image(aspect, path, season):
                 continue
 
-            if path.startswith('video@'):
-                continue
-
-            if self._media_type == self._type_info['tvshow']:
-                if filetools.replace_extension(path, '') == f'{self._file}{aspect}':
-                    continue
-                if aspect.startswith('tvshow.') or aspect.startswith('season.'):
-                    continue
-                season_name = 'season-specials' if season == 0 else f'season{season:02}'
-                if season_name and path == f'{self._file}{season_name}-{aspect}':
-                    continue
-            elif filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-{aspect}':
-                continue
-
-            if season:
-                query = f'thumb[@aspect=\'{aspect}\'][@season=\'{season}\']'
+            if aspect.startswith('fanart'):
+                self._set_fanart(path)
             else:
-                query = f'thumb[@aspect=\'{aspect}\']'
-            element = self._xml.find(query)
-            if element is None:
-                element = self._add_tag(self._xml, 'thumb')
-
-            element.text = path
-            element.set('aspect', aspect)
+                self._set_thumb(aspect, path, season)
 
     def _convert_cast(self, field: str, actors) -> None:
         actor_bin = ElementTree.Element('bucket')
@@ -202,9 +181,6 @@ class _Exporter:
         else:
             self._merge_cast(actors, actor_bin)
 
-    def _convert_fanart(self, field: str, value) -> None:
-        xbmc.log(f'convert fanart: {field} with value {value}')
-
     def _convert_ratings(self, field: str, value) -> None:
         xbmc.log(f'convert ratings: {field} with value {value}')
 
@@ -214,11 +190,54 @@ class _Exporter:
     def _convert_streamdetails(self, field: str, value) -> None:
         xbmc.log(f'convert streamdetails: {field} with value {value}')
 
-    def _conver_trailer(self, field: str, value) -> None:
+    def _convert_trailer(self, field: str, value) -> None:
         xbmc.log(f'convert trailer: {field} with value {value}')
 
     def _convert_uniqueid(self, field: str, value) -> None:
         xbmc.log(f'convert uniqueid: {field} with value {value}')
+
+    def _is_ignored_image(self, aspect: str, path: str, season: Optional[int] = None) -> bool:
+        if (path == 'DefaultVideo.png'
+                or path == 'DefaultFolder.png'
+                or path.startswith('video@')
+                or aspect.startswith('tvshow.')
+                or aspect.startswith('season.')):
+            return True
+
+        extensionless_path = filetools.replace_extension(path, '')
+        if self._media_type == self._type_info['tvshow']:
+            if extensionless_path == f'{self._file}{aspect}':
+                return True
+            if season:
+                season_name = 'season-specials' if season == 0 else f'season{season:02}'
+                if (extensionless_path == f'{self._file}{season_name}-{aspect}'
+                        or extensionless_path == f'{self._file}season-all-{aspect}'):
+                    return True
+        elif extensionless_path == f'{filetools.replace_extension(self._file, "")}-{aspect}':
+            return True
+
+        return False
+
+    def _set_fanart(self, path: str) -> None:
+        fanart = self._xml.find('fanart')
+        if fanart is None:
+            fanart = self._add_tag(self._xml, 'fanart')
+
+        thumb = fanart.find(f'[thumb=\'{path}\']')
+        if thumb is None:
+            self._add_tag(fanart, 'thumb', path)
+
+    def _set_thumb(self, aspect: str, path: str, season: Optional[int] = None) -> None:
+        if season:
+            query = f'thumb[@aspect=\'{aspect}\'][@season=\'{season}\']'
+        else:
+            query = f'thumb[@aspect=\'{aspect}\']'
+        element = self._xml.find(query)
+        if element is None:
+            element = self._add_tag(self._xml, 'thumb')
+
+        element.text = path
+        element.set('aspect', aspect)
 
     def _update_cast(self, new_actors: list, old_actors: ElementTree.Element):
         for element in old_actors:
@@ -237,7 +256,7 @@ class _Exporter:
                 self._xml.append(element)
             self._update_actor(element, actor)
 
-    def _update_actor(self, element, details) -> None:
+    def _update_actor(self, element: ElementTree.Element, details: dict) -> None:
         if 'name' in details:
             self._set_tag(element, 'name', details['name'])
         if 'role' in details:
