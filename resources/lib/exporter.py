@@ -111,6 +111,8 @@ class _Exporter:
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
         xbmc.log(f'Source JSON:\n{details}')
         for field, value in details.items():
+            if field in self._ignored_fields:
+                continue
             handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
             handler(field, value)
 
@@ -158,9 +160,6 @@ class _Exporter:
             self._pretty_print(element[-1], level+1)
 
     def _convert_generic(self, field: str, value) -> None:
-        if field in self._ignored_fields:
-            return
-
         if field in self._tag_remaps:
             tag = self._tag_remaps[field]
         else:
