@@ -7,8 +7,8 @@ import xbmcaddon
 class _Addon(xbmcaddon.Addon):
     def __init__(self):
         super().__init__()
-        self._id = ADDON.getAddonInfo('id')
-        self._name = ADDON.getAddonInfo('name')
+        self._id = self.getAddonInfo('id')
+        self._name = self.getAddonInfo('name')
 
     @property
     def id(self) -> str:
