@@ -1,7 +1,7 @@
 import collections
 import xml.etree.ElementTree as ElementTree
 import xbmc
-from typing import Callable, Final
+from typing import Callable, Final, Optional
 
 import xbmcvfs
 
@@ -67,7 +67,7 @@ class _Exporter:
     # so far as I can see. However, not sure if it is always the same as
     # title and isn't directly exportable, so rather than mapping label
     # to title and not requesting title, we're ignoring it.
-    _ignored_fields = ['label', 'file', 'movieid', 'episodeid', 'tvshowid']
+    _ignored_fields = ['label', 'movieid', 'episodeid', 'tvshowid']
 
     _tag_remaps = {
         'plotoutline': 'outline',
@@ -111,9 +111,9 @@ class _Exporter:
         parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
         xbmc.log(f'Source JSON:\n{details}')
-        for field in details:
+        for field, value in details.items():
             handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
-            handler(field, details[field])
+            handler(field, value)
 
         self._pretty_print(self._xml)
         xbmc.log(f'Behold! XML:\n{ElementTree.tostring(self._xml, encoding="unicode")}')
@@ -152,8 +152,37 @@ class _Exporter:
         else:
             self._add_tag(self._xml, tag, value)
 
-    def _convert_art(self, field: str, value) -> None:
-        xbmc.log(f'convert art: {field} with value {value}')
+    def _convert_art(self, field: str, value, season: Optional[int] = None) -> None:
+        for aspect, coded_path in value.items():
+            path = filetools.decode_image(coded_path)
+
+            if path == 'DefaultVideo.png' or path == 'DefaultFolder.png':
+                continue
+
+            if path.startswith('video@'):
+                continue
+
+            if self._media_type == self._type_info['tvshow']:
+                if filetools.replace_extension(path, '') == f'{self._file}{aspect}':
+                    continue
+                if aspect.startswith('tvshow.') or aspect.startswith('season.'):
+                    continue
+                season_name = 'season-specials' if season == 0 else f'season{season:02}'
+                if season_name and path == f'{self._file}{season_name}-{aspect}':
+                    continue
+            elif filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-{aspect}':
+                continue
+
+            if season:
+                query = f'thumb[@aspect=\'{aspect}\'][@season=\'{season}\']'
+            else:
+                query = f'thumb[@aspect=\'{aspect}\']'
+            element = self._xml.find(query)
+            if element is None:
+                element = self._add_tag(self._xml, 'thumb')
+
+            element.text = path
+            element.set('aspect', aspect)
 
     def _convert_cast(self, field: str, actors) -> None:
         actor_bin = ElementTree.Element('bucket')
