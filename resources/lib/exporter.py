@@ -127,9 +127,9 @@ class _Exporter:
                 element.text = indent(level)
             for subelement in range(len(element)-1):
                 element[subelement].tail = indent(level)
+                self._pretty_print(element[subelement], level+1)
             element[-1].tail = indent(level-1)
-            for subelement in element:
-                self._pretty_print(subelement, level+1)
+            self._pretty_print(element[-1], level+1)
 
     def _convert_generic(self, field: str, value) -> None:
         if field in self._ignored_fields:
