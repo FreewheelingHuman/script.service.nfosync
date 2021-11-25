@@ -15,7 +15,7 @@ def decode_image(path: str) -> str:
 def get_movie_nfo(media_path: str) -> Optional[str]:
     nfo_path = None
     movie_nfo = _replace_tail(media_path, 'movie.nfo')
-    filename_nfo = _replace_extension(media_path, '.nfo')
+    filename_nfo = replace_extension(media_path, '.nfo')
     if xbmcvfs.exists(movie_nfo):
         nfo_path = movie_nfo
     elif xbmcvfs.exists(filename_nfo):
@@ -25,7 +25,7 @@ def get_movie_nfo(media_path: str) -> Optional[str]:
 
 def get_episode_nfo(media_path: str) -> Optional[str]:
     nfo_path = None
-    filename_nfo = _replace_extension(media_path, '.nfo')
+    filename_nfo = replace_extension(media_path, '.nfo')
     if xbmcvfs.exists(filename_nfo):
         nfo_path = filename_nfo
     return nfo_path
@@ -39,7 +39,7 @@ def get_tvshow_nfo(media_path: str) -> Optional[str]:
     return nfo_path
 
 
-def _replace_extension(path: str, extension: str) -> str:
+def replace_extension(path: str, extension: str) -> str:
     return os.path.splitext(path)[0] + extension
 
 
