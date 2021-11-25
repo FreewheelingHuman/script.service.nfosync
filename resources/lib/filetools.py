@@ -7,6 +7,7 @@ import xbmcvfs
 
 def decode_image(path: str) -> str:
     decoded_path = path.replace('image://', '', 1)
+    decoded_path = decoded_path[:-1]
     decoded_path = urllib.parse.unquote(decoded_path)
     return decoded_path
 
