@@ -117,6 +117,33 @@ class _Exporter:
         self._pretty_print(self._xml)
         xbmc.log(f'Behold! XML:\n{ElementTree.tostring(self._xml, encoding="unicode")}')
 
+    def _import_nfo(self, media_path: str) -> None:
+        if media_path is None or media_path == '':
+            raise _ExportFailure(f'Empty media path for library id "{self._media_id}"')
+
+        nfo_path = None
+
+        if self._media_type == self._type_info['movie']:
+            nfo_path = filetools.get_movie_nfo(media_path)
+        elif self._media_type == self._type_info['episode']:
+            nfo_path = filetools.get_episode_nfo(media_path)
+        elif self._media_type == self._type_info['tvshow']:
+            nfo_path = filetools.get_tvshow_nfo(media_path)
+
+        if nfo_path is None:
+            return
+
+        with xbmcvfs.File(nfo_path) as file:
+            nfo_contents = file.read()
+
+        if nfo_contents == '':
+            raise _ExportFailure(f'Unable to read NFO or file empty - "{nfo_path}"')
+
+        try:
+            self._xml = ElementTree.fromstring(nfo_contents)
+        except ElementTree.ParseError as error:
+            raise _ExportFailure(f'Unable to parse NFO file "{nfo_path}" due to error: {error}')
+
     def _pretty_print(self, element, level=1) -> None:
         def indent(ilevel):
             return '\n' + '    ' * ilevel
@@ -163,39 +190,6 @@ class _Exporter:
             else:
                 self._set_thumb(aspect, path, season)
 
-    def _convert_cast(self, field: str, actors) -> None:
-        actor_bin = ElementTree.Element('bucket')
-        existing_actors = self._xml.findall('actor')
-
-        if existing_actors and SYNC.actor == ActorTagOption.SKIP:
-            return
-
-        if SYNC.actor != ActorTagOption.OVERWRITE:
-            actor_bin.extend(existing_actors)
-
-        for actor in existing_actors:
-            self._xml.remove(actor)
-
-        if SYNC.actor == ActorTagOption.UPDATE:
-            self._update_cast(actors, actor_bin)
-        else:
-            self._merge_cast(actors, actor_bin)
-
-    def _convert_ratings(self, field: str, value) -> None:
-        xbmc.log(f'convert ratings: {field} with value {value}')
-
-    def _convert_set(self, field: str, value) -> None:
-        xbmc.log(f'convert set: {field} with value {value}')
-
-    def _convert_streamdetails(self, field: str, value) -> None:
-        xbmc.log(f'convert streamdetails: {field} with value {value}')
-
-    def _convert_trailer(self, field: str, value) -> None:
-        xbmc.log(f'convert trailer: {field} with value {value}')
-
-    def _convert_uniqueid(self, field: str, value) -> None:
-        xbmc.log(f'convert uniqueid: {field} with value {value}')
-
     def _is_ignored_image(self, aspect: str, path: str, season: Optional[int] = None) -> bool:
         if (path == 'DefaultVideo.png'
                 or path == 'DefaultFolder.png'
@@ -239,6 +233,24 @@ class _Exporter:
         element.text = path
         element.set('aspect', aspect)
 
+    def _convert_cast(self, field: str, actors) -> None:
+        actor_bin = ElementTree.Element('bucket')
+        existing_actors = self._xml.findall('actor')
+
+        if existing_actors and SYNC.actor == ActorTagOption.SKIP:
+            return
+
+        if SYNC.actor != ActorTagOption.OVERWRITE:
+            actor_bin.extend(existing_actors)
+
+        for actor in existing_actors:
+            self._xml.remove(actor)
+
+        if SYNC.actor == ActorTagOption.UPDATE:
+            self._update_cast(actors, actor_bin)
+        else:
+            self._merge_cast(actors, actor_bin)
+
     def _update_cast(self, new_actors: list, old_actors: ElementTree.Element):
         for element in old_actors:
             self._xml.append(element)
@@ -266,6 +278,21 @@ class _Exporter:
         if 'thumbnail' in details:
             self._set_tag(element, 'thumb', filetools.decode_image(details['thumbnail']))
 
+    def _convert_ratings(self, field: str, value) -> None:
+        xbmc.log(f'convert ratings: {field} with value {value}')
+
+    def _convert_set(self, field: str, value) -> None:
+        xbmc.log(f'convert set: {field} with value {value}')
+
+    def _convert_streamdetails(self, field: str, value) -> None:
+        xbmc.log(f'convert streamdetails: {field} with value {value}')
+
+    def _convert_trailer(self, field: str, value) -> None:
+        xbmc.log(f'convert trailer: {field} with value {value}')
+
+    def _convert_uniqueid(self, field: str, value) -> None:
+        xbmc.log(f'convert uniqueid: {field} with value {value}')
+
     def _add_tag(self, parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
         if text is not None:
@@ -279,33 +306,6 @@ class _Exporter:
         else:
             element.text = str(text)
         return element
-
-    def _import_nfo(self, media_path: str) -> None:
-        if media_path is None or media_path == '':
-            raise _ExportFailure(f'Empty media path for library id "{self._media_id}"')
-
-        nfo_path = None
-
-        if self._media_type == self._type_info['movie']:
-            nfo_path = filetools.get_movie_nfo(media_path)
-        elif self._media_type == self._type_info['episode']:
-            nfo_path = filetools.get_episode_nfo(media_path)
-        elif self._media_type == self._type_info['tvshow']:
-            nfo_path = filetools.get_tvshow_nfo(media_path)
-
-        if nfo_path is None:
-            return
-
-        with xbmcvfs.File(nfo_path) as file:
-            nfo_contents = file.read()
-
-        if nfo_contents == '':
-            raise _ExportFailure(f'Unable to read NFO or file empty - "{nfo_path}"')
-
-        try:
-            self._xml = ElementTree.fromstring(nfo_contents)
-        except ElementTree.ParseError as error:
-            raise _ExportFailure(f'Unable to parse NFO file "{nfo_path}" due to error: {error}')
 
 
 def export(media_id: int, media_type: str):
