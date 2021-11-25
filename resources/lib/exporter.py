@@ -165,8 +165,7 @@ class _Exporter:
         else:
             tag = field
 
-        for element in self._xml.findall(tag):
-            self._xml.remove(element)
+        self._remove_tags(self._xml, tag)
 
         if value is None or value == '':
             return
@@ -281,7 +280,21 @@ class _Exporter:
             self._set_tag(element, 'thumb', filetools.decode_image(details['thumbnail']))
 
     def _convert_ratings(self, field: str, value) -> None:
-        xbmc.log(f'convert ratings: {field} with value {value}')
+        self._remove_tags(self._xml, 'ratings')
+        ratings = self._add_tag(self._xml, 'ratings')
+
+        for rater, details in value.items():
+            rating = self._add_tag(ratings, 'rating')
+
+            rating.set('name', rater)
+            rating.set('max', str(10))
+            if details.get('default'):
+                rating.set('default', 'true')
+            else:
+                rating.set('default', 'false')
+
+            self._add_tag(rating, 'value', round(details.get('rating', 0.0), 1))
+            self._add_tag(rating, 'votes', details.get('votes', 0))
 
     def _convert_set(self, field: str, value) -> None:
         xbmc.log(f'convert set: {field} with value {value}')
@@ -322,6 +335,10 @@ class _Exporter:
         for leftover in elements[1:]:
             parent.remove(leftover)
         return adopter
+
+    def _remove_tags(self, parent: ElementTree.Element, tag: str) -> None:
+        for element in parent.findall(tag):
+            parent.remove(element)
 
 def export(media_id: int, media_type: str):
     try:
