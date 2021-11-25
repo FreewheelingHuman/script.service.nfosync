@@ -184,7 +184,7 @@ class _Exporter:
             if self._is_ignored_image(aspect, path, season):
                 continue
 
-            if aspect.startswith('fanart'):
+            if season is None and aspect.startswith('fanart'):
                 self._set_fanart(path)
             else:
                 self._set_thumb(aspect, path, season)
@@ -231,6 +231,9 @@ class _Exporter:
 
         element.text = path
         element.set('aspect', aspect)
+        if season:
+            element.set('season', str(season))
+            element.set('type', 'season')
 
     def _convert_cast(self, field: str, actors) -> None:
         actor_bin = ElementTree.Element('bucket')
