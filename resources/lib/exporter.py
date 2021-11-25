@@ -212,7 +212,7 @@ class _Exporter:
         return False
 
     def _set_fanart(self, path: str) -> None:
-        fanart = self._xml.find('fanart')
+        fanart = self._merge_tags(self._xml, 'fanart')
         if fanart is None:
             fanart = self._add_tag(self._xml, 'fanart')
 
@@ -309,6 +309,19 @@ class _Exporter:
             element.text = str(text)
         return element
 
+    def _merge_tags(self, parent: ElementTree.Element, tag: str) -> Optional[ElementTree.Element]:
+        elements = parent.findall(tag)
+        if not elements:
+            return None
+        elif len(elements) == 1:
+            return elements[0]
+        adopter = elements[0]
+        adoptees = parent.findall(f'{tag}/*')
+        adopter.clear()
+        adopter.extend(adoptees)
+        for leftover in elements[1:]:
+            parent.remove(leftover)
+        return adopter
 
 def export(media_id: int, media_type: str):
     try:
