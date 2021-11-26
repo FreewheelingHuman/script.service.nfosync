@@ -81,6 +81,7 @@ class _Exporter:
         self._handlers: Final = {
             'art': self._convert_art,
             'cast': self._convert_cast,
+            'playcount': self._convert_playcount,
             'ratings': self._convert_ratings,
             'setid': self._convert_set,
             'streamdetails': self._convert_streamdetails,
@@ -184,8 +185,10 @@ class _Exporter:
                 continue
 
             if season is None and aspect.startswith('fanart'):
+                xbmc.log(f'Fanart called! Aspect:{aspect} Season: {season}')
                 self._set_fanart(path)
             else:
+                xbmc.log(f'Thumb called! Aspect: {aspect} Season: {season}')
                 self._set_thumb(aspect, path, season)
 
     def _is_ignored_image(self, aspect: str, path: str, season: Optional[int] = None) -> bool:
@@ -279,6 +282,12 @@ class _Exporter:
         if 'thumbnail' in details:
             self._set_tag(element, 'thumb', filetools.decode_image(details['thumbnail']))
 
+    def _convert_playcount(self, field: str, value) -> None:
+        watched = 'true' if value > 0 else 'false'
+
+        self._set_tag(self._xml, 'playcount', value)
+        self._set_tag(self._xml, 'watched', watched)
+
     def _convert_ratings(self, field: str, value) -> None:
         self._remove_tags(self._xml, 'ratings')
         ratings = self._add_tag(self._xml, 'ratings')
@@ -325,26 +334,32 @@ class _Exporter:
         return element
 
     def _set_tag(self, parent: ElementTree.Element, tag: str, text: str) -> ElementTree.Element:
-        element = parent.find(tag)
-        if element is None:
-            element = self._add_tag(parent, tag, text)
-        else:
-            element.text = str(text)
+        self._remove_tags(parent, tag)
+        element = self._add_tag(parent, tag, text)
         return element
 
     def _merge_tags(self, parent: ElementTree.Element, tag: str) -> Optional[ElementTree.Element]:
-        elements = parent.findall(tag)
-        if not elements:
-            return None
-        elif len(elements) == 1:
-            return elements[0]
-        adopter = elements[0]
-        adoptees = parent.findall(f'{tag}/*')
-        adopter.clear()
-        adopter.extend(adoptees)
-        for leftover in elements[1:]:
-            parent.remove(leftover)
-        return adopter
+        # elements = parent.findall(tag)
+        # if not elements:
+        #     return None
+        # elif len(elements) == 1:
+        #     return elements[0]
+        # adopter = elements[0]
+        # adoptees = parent.findall(f'{tag}/*')
+        # adopter.clear()
+        # adopter.extend(adoptees)
+        # for leftover in elements[1:]:
+        #     parent.remove(leftover)
+
+        xbmc.log(f'Merge called.')
+
+        adopter = ElementTree.Element(tag)
+        adopter.extend(parent.findall(f'{tag}/*'))
+        if len(adopter):
+            self._remove_tags(parent, tag)
+            parent.append(adopter)
+            return adopter
+        return None
 
     def _remove_tags(self, parent: ElementTree.Element, tag: str) -> None:
         for element in parent.findall(tag):
