@@ -297,7 +297,17 @@ class _Exporter:
             self._add_tag(rating, 'votes', details.get('votes', 0))
 
     def _convert_set(self, field: str, value) -> None:
-        xbmc.log(f'convert set: {field} with value {value}')
+        self._remove_tags(self._xml, 'set')
+
+        if value == 0:
+            return
+
+        result = jsonrpc.request('VideoLibrary.GetMovieSetDetails', setid=value, properties=['title', 'plot'])
+        details = result['setdetails']
+
+        st = self._add_tag(self._xml, 'set')
+        self._add_tag(st, 'title', details['title'])
+        self._add_tag(st, 'overview', details['plot'])
 
     def _convert_streamdetails(self, field: str, value) -> None:
         xbmc.log(f'convert streamdetails: {field} with value {value}')
