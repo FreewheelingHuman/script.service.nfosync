@@ -21,20 +21,20 @@ class _Exporter:
         'plotoutline', 'originaltitle', 'lastplayed', 'playcount', 'writer',
         'studio', 'mpaa', 'cast', 'country', 'runtime', 'setid', 'showlink',
         'streamdetails', 'top250', 'sorttitle', 'dateadded', 'tag',
-        'art', 'userrating', 'ratings', 'premiered', 'uniqueid'
+        'userrating', 'ratings', 'premiered', 'uniqueid'
     ]
 
     _episode_fields: Final = [
         'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
         'director', 'season', 'episode', 'originaltitle', 'showtitle', 'cast',
-        'streamdetails', 'lastplayed', 'dateadded', 'uniqueid', 'art',
+        'streamdetails', 'lastplayed', 'dateadded', 'uniqueid',
         'specialsortseason', 'specialsortepisode', 'userrating', 'ratings'
     ]
 
     _tvshow_fields: Final = [
         'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
         'episode', 'premiered', 'lastplayed', 'originaltitle',
-        'sorttitle', 'season', 'dateadded', 'tag', 'art', 'userrating',
+        'sorttitle', 'season', 'dateadded', 'tag', 'userrating',
         'ratings', 'runtime', 'uniqueid'
     ]
 
@@ -95,6 +95,9 @@ class _Exporter:
         self._file = None
         self._xml = None
 
+        self._cleared_arts = []
+        self._fanart_tag = None
+
     def export(self) -> None:
         xbmc.log('PLACEHOLDER: Export has been triggered.')
 
@@ -110,12 +113,18 @@ class _Exporter:
 
         parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
-        xbmc.log(f'Source JSON:\n{details}')
+        xbmc.log(f'Source JSON (Base):\n{details}')
         for field, value in details.items():
             if field in self._ignored_fields:
                 continue
             handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
             handler(field, value)
+
+        parameters = {'item': {self._media_type.id_name: self._media_id}}
+        available_art = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)['availableart']
+        xbmc.log(f'Source JSON (Art):\n{available_art}')
+        for art in available_art:
+            self._convert_art(art)
 
         self._pretty_print(self._xml)
         xbmc.log(f'Behold! XML:\n{ElementTree.tostring(self._xml, encoding="unicode")}')
@@ -177,17 +186,20 @@ class _Exporter:
         else:
             self._add_tag(self._xml, tag, value)
 
-    def _convert_art(self, field: str, value, season: Optional[int] = None) -> None:
-        for aspect, coded_path in value.items():
-            path = filetools.decode_image(coded_path)
+    def _convert_art(self, art: dict, season: Optional[int] = None) -> None:
+        art_type = art['arttype']
+        preview = None
+        if 'previewurl' in art:
+            preview = filetools.decode_image(art['previewurl'])
+        path = filetools.decode_image(art['url'])
 
-            if self._is_ignored_image(aspect, path, season):
-                continue
+        if self._is_ignored_image(art_type, path, season):
+            return
 
-            if season is None and aspect.startswith('fanart'):
-                self._set_fanart(path)
-            else:
-                self._set_thumb(aspect, path, season)
+        if season is None and art_type == 'fanart':
+            self._set_fanart(preview, path)
+        else:
+            self._set_thumb(art_type, preview, path, season)
 
     def _is_ignored_image(self, aspect: str, path: str, season: Optional[int] = None) -> bool:
         if (path == 'DefaultVideo.png'
@@ -211,26 +223,37 @@ class _Exporter:
 
         return False
 
-    def _set_fanart(self, path: str) -> None:
-        fanart = self._merge_tags(self._xml, 'fanart')
-        if fanart is None:
-            fanart = self._add_tag(self._xml, 'fanart')
+    def _set_fanart(self, preview: Optional[str], path: str) -> None:
+        # We only clean out fanart tags if we have fanart tags to set and we
+        # only want to do this once so we don't clear out other new fanart tags
+        if self._fanart_tag is None:
+            self._fanart = self._set_tag(self._xml, 'fanart', None)
 
-        thumb = fanart.find(f'[thumb=\'{path}\']')
-        if thumb is None:
-            self._add_tag(fanart, 'thumb', path)
+        thumb = self._add_tag(self._fanart, 'thumb', path)
+        if preview:
+            thumb.set('preview', preview)
 
-    def _set_thumb(self, aspect: str, path: str, season: Optional[int] = None) -> None:
+    def _set_thumb(self, art_type: str, preview: Optional[str], path: str, season: Optional[int] = None) -> None:
+        # We only clear out art tags of the same type and we only want to do
+        # this once per art type, so as not delete new tags we're adding
+        # Also, we want to do this seasonally for TV shows
+        art_code = art_type
         if season:
-            query = f'thumb[@aspect=\'{aspect}\'][@season=\'{season}\']'
-        else:
-            query = f'thumb[@aspect=\'{aspect}\']'
-        element = self._xml.find(query)
-        if element is None:
-            element = self._add_tag(self._xml, 'thumb')
+            art_code += f'.season{season}'
+        if art_code not in self._cleared_arts:
+            self._cleared_arts.append(art_code)
+            if season:
+                query = f'thumb[@aspect=\'{art_type}\'][@season=\'{season}\']'
+            else:
+                query = f'thumb[@aspect=\'{art_type}\']'
+            for elem in self._xml.findall(query):
+                self._xml.remove(elem)
 
+        element = self._add_tag(self._xml, 'thumb')
         element.text = path
-        element.set('aspect', aspect)
+        element.set('aspect', art_type)
+        if preview:
+            element.set('preview', preview)
         if season:
             element.set('season', str(season))
             element.set('type', 'season')
@@ -287,21 +310,21 @@ class _Exporter:
         self._set_tag(self._xml, 'watched', watched)
 
     def _convert_ratings(self, field: str, value) -> None:
-        self._remove_tags(self._xml, 'ratings')
-        ratings = self._add_tag(self._xml, 'ratings')
+        ratings = self._set_tag(self._xml, 'ratings', None)
 
         for rater, details in value.items():
             rating = self._add_tag(ratings, 'rating')
 
             rating.set('name', rater)
-            rating.set('max', str(10))
+            rating.set('max', str(10))  # Regardless of origin, Kodi normalizes ratings to out-of-10
             if details.get('default'):
                 rating.set('default', 'true')
             else:
                 rating.set('default', 'false')
 
             self._add_tag(rating, 'value', round(details.get('rating', 0.0), 1))
-            self._add_tag(rating, 'votes', details.get('votes', 0))
+            if 'votes' in details:
+                self._add_tag(rating, 'votes', details['votes'])
 
     def _convert_set(self, field: str, value) -> None:
         self._remove_tags(self._xml, 'set')
@@ -325,29 +348,21 @@ class _Exporter:
     def _convert_uniqueid(self, field: str, value) -> None:
         xbmc.log(f'convert uniqueid: {field} with value {value}')
 
-    def _add_tag(self, parent: ElementTree.Element, tag: str, text: str = None) -> ElementTree.Element:
+    def _add_tag(self, parent: ElementTree.Element, tag: str, text: Optional[str] = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
         if text is not None:
             element.text = str(text)
         return element
 
-    def _set_tag(self, parent: ElementTree.Element, tag: str, text: str) -> ElementTree.Element:
+    def _set_tag(self, parent: ElementTree.Element, tag: str, text: Optional[str]) -> ElementTree.Element:
         self._remove_tags(parent, tag)
         element = self._add_tag(parent, tag, text)
         return element
 
-    def _merge_tags(self, parent: ElementTree.Element, tag: str) -> Optional[ElementTree.Element]:
-        adopter = ElementTree.Element(tag)
-        adopter.extend(parent.findall(f'{tag}/*'))
-        if len(adopter):
-            self._remove_tags(parent, tag)
-            parent.append(adopter)
-            return adopter
-        return None
-
     def _remove_tags(self, parent: ElementTree.Element, tag: str) -> None:
         for element in parent.findall(tag):
             parent.remove(element)
+
 
 def export(media_id: int, media_type: str):
     try:
