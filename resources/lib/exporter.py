@@ -258,7 +258,7 @@ class _Exporter:
             element.set('season', str(season))
             element.set('type', 'season')
 
-    def _convert_cast(self, field: str, actors) -> None:
+    def _convert_cast(self, field: str, actors: list) -> None:
         actor_bin = ElementTree.Element('bucket')
         existing_actors = self._xml.findall('actor')
 
@@ -309,7 +309,7 @@ class _Exporter:
         self._set_tag(self._xml, 'playcount', count)
         self._set_tag(self._xml, 'watched', watched)
 
-    def _convert_ratings(self, field: str, ratings) -> None:
+    def _convert_ratings(self, field: str, ratings: dict) -> None:
         ratings_elem = self._set_tag(self._xml, 'ratings', None)
 
         for rater, details in ratings.items():
@@ -339,7 +339,7 @@ class _Exporter:
         self._add_tag(st, 'title', details['title'])
         self._add_tag(st, 'overview', details['plot'])
 
-    def _convert_streamdetails(self, field: str, details) -> None:
+    def _convert_streamdetails(self, field: str, details: dict) -> None:
         self._remove_tags(self._xml, 'fileinfo')
         fileinfo = self._add_tag(self._xml, 'fileinfo')
         streamdetails = self._add_tag(fileinfo, 'streamdetails')
@@ -360,7 +360,7 @@ class _Exporter:
                 continue
             self._add_tag(element, proprty, value)
 
-    def _convert_trailer(self, field: str, path) -> None:
+    def _convert_trailer(self, field: str, path: str) -> None:
         if SYNC.trailer == TrailerTagOption.SKIP:
             return
         if filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-trailer':
