@@ -1,6 +1,5 @@
 import collections
 import xml.etree.ElementTree as ElementTree
-import xbmc
 from typing import Callable, Final, Optional
 
 import xbmcvfs
@@ -92,7 +91,8 @@ class _Exporter:
         self._media_id = media_id
         self._media_type = self._type_info[media_type]
 
-        self._file = None
+        self._media_path = None
+        self._nfo = None
         self._xml = None
 
         self._cleared_arts = []
@@ -101,8 +101,8 @@ class _Exporter:
     def export(self) -> None:
         parameters = {self._media_type.id_name: self._media_id, 'properties': ['file']}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
-        self._file = details['file']
-        self._import_nfo(self._file)
+        self._media_path = details['file']
+        self._read_nfo()
         if self._xml is None:
             if SYNC.create_nfo:
                 self._xml = ElementTree.Element(self._media_type.root_tag)
@@ -124,35 +124,37 @@ class _Exporter:
         for art in available_art:
             self._convert_art(art)
 
-        self._pretty_print(self._xml)
-        xbmc.log(f'Behold! XML:\n{ElementTree.tostring(self._xml, encoding="unicode")}')
+        self._write_nfo()
 
-    def _import_nfo(self, media_path: str) -> None:
-        if media_path is None or media_path == '':
+    def _read_nfo(self) -> None:
+        if self._media_path is None or self._media_path == '':
             raise _ExportFailure(f'Empty media path for library id "{self._media_id}"')
 
-        nfo_path = None
-
         if self._media_type == self._type_info['movie']:
-            nfo_path = filetools.get_movie_nfo(media_path)
+            self._nfo = filetools.get_movie_nfo(self._media_path)
         elif self._media_type == self._type_info['episode']:
-            nfo_path = filetools.get_episode_nfo(media_path)
+            self._nfo = filetools.get_episode_nfo(self._media_path)
         elif self._media_type == self._type_info['tvshow']:
-            nfo_path = filetools.get_tvshow_nfo(media_path)
+            self._nfo = filetools.get_tvshow_nfo(self._media_path)
 
-        if nfo_path is None:
+        if self._nfo is None:
             return
 
-        with xbmcvfs.File(nfo_path) as file:
+        with xbmcvfs.File(self._nfo) as file:
             nfo_contents = file.read()
 
         if nfo_contents == '':
-            raise _ExportFailure(f'Unable to read NFO or file empty - "{nfo_path}"')
+            raise _ExportFailure(f'Unable to read NFO or file empty - "{self._nfo}"')
 
         try:
             self._xml = ElementTree.fromstring(nfo_contents)
         except ElementTree.ParseError as error:
-            raise _ExportFailure(f'Unable to parse NFO file "{nfo_path}" due to error: {error}')
+            raise _ExportFailure(f'Unable to parse NFO file "{self._nfo}" due to error: {error}')
+
+    def _write_nfo(self):
+        self._pretty_print(self._xml)
+        with xbmcvfs.File(self._nfo, 'w') as file:
+            file.write(ElementTree.tostring(self._xml, encoding="UTF-8", xml_declaration=True))
 
     def _pretty_print(self, element, level=1) -> None:
         def indent(indent_level):
@@ -209,14 +211,14 @@ class _Exporter:
 
         extensionless_path = filetools.replace_extension(path, '')
         if self._media_type == self._type_info['tvshow']:
-            if extensionless_path == f'{self._file}{aspect}':
+            if extensionless_path == f'{self._media_path}{aspect}':
                 return True
             if season:
                 season_name = 'season-specials' if season == 0 else f'season{season:02}'
-                if (extensionless_path == f'{self._file}{season_name}-{aspect}'
-                        or extensionless_path == f'{self._file}season-all-{aspect}'):
+                if (extensionless_path == f'{self._media_path}{season_name}-{aspect}'
+                        or extensionless_path == f'{self._media_path}season-all-{aspect}'):
                     return True
-        elif extensionless_path == f'{filetools.replace_extension(self._file, "")}-{aspect}':
+        elif extensionless_path == f'{filetools.replace_extension(self._media_path, "")}-{aspect}':
             return True
 
         return False
@@ -373,7 +375,7 @@ class _Exporter:
 
         if SYNC.trailer == TrailerTagOption.SKIP:
             return
-        if filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-trailer':
+        if filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._media_path, "")}-trailer':
             return
         if SYNC.trailer == TrailerTagOption.NO_PLUGIN and path.startswith('plugin://'):
             return
