@@ -56,6 +56,10 @@ class _Sync:
     def actor(self) -> ActorTagOption:
         return ActorTagOption(ADDON.getSettingString('sync.actor'))
 
+    @property
+    def trailer(self) -> bool:
+        return True  # Eventually this will be an actual setting
+
 
 class _Triggers:
 
