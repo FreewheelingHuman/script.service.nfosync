@@ -157,8 +157,8 @@ class _Exporter:
             raise _ExportFailure(f'Unable to parse NFO file "{nfo_path}" due to error: {error}')
 
     def _pretty_print(self, element, level=1) -> None:
-        def indent(ilevel):
-            return '\n' + '    ' * ilevel
+        def indent(indent_level):
+            return '\n' + '    ' * indent_level
 
         if len(element):
             if element.text is None or element.text.strip() == '':
@@ -259,6 +259,8 @@ class _Exporter:
             element.set('type', 'season')
 
     def _convert_cast(self, field: str, actors: list) -> None:
+        del field
+
         actor_bin = ElementTree.Element('bucket')
         existing_actors = self._xml.findall('actor')
 
@@ -304,12 +306,16 @@ class _Exporter:
             self._set_tag(element, 'thumb', filetools.decode_image(details['thumbnail']))
 
     def _convert_playcount(self, field: str, count) -> None:
+        del field
+
         watched = 'true' if count > 0 else 'false'
 
         self._set_tag(self._xml, 'playcount', count)
         self._set_tag(self._xml, 'watched', watched)
 
     def _convert_ratings(self, field: str, ratings: dict) -> None:
+        del field
+
         ratings_elem = self._set_tag(self._xml, 'ratings', None)
 
         for rater, details in ratings.items():
@@ -326,7 +332,9 @@ class _Exporter:
             if 'votes' in details:
                 self._add_tag(rating, 'votes', details['votes'])
 
-    def _convert_set(self, field: str, set_id) -> None:
+    def _convert_set(self, field: str, set_id: int) -> None:
+        del field
+
         self._remove_tags(self._xml, 'set')
 
         if set_id == 0:
@@ -340,6 +348,8 @@ class _Exporter:
         self._add_tag(st, 'overview', details['plot'])
 
     def _convert_streamdetails(self, field: str, details: dict) -> None:
+        del field
+
         self._remove_tags(self._xml, 'fileinfo')
         fileinfo = self._add_tag(self._xml, 'fileinfo')
         streamdetails = self._add_tag(fileinfo, 'streamdetails')
@@ -361,6 +371,8 @@ class _Exporter:
             self._add_tag(element, proprty, value)
 
     def _convert_trailer(self, field: str, path: str) -> None:
+        del field
+
         if SYNC.trailer == TrailerTagOption.SKIP:
             return
         if filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-trailer':
