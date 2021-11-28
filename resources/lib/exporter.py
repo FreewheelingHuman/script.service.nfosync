@@ -303,17 +303,17 @@ class _Exporter:
         if 'thumbnail' in details:
             self._set_tag(element, 'thumb', filetools.decode_image(details['thumbnail']))
 
-    def _convert_playcount(self, field: str, value) -> None:
-        watched = 'true' if value > 0 else 'false'
+    def _convert_playcount(self, field: str, count) -> None:
+        watched = 'true' if count > 0 else 'false'
 
-        self._set_tag(self._xml, 'playcount', value)
+        self._set_tag(self._xml, 'playcount', count)
         self._set_tag(self._xml, 'watched', watched)
 
-    def _convert_ratings(self, field: str, value) -> None:
-        ratings = self._set_tag(self._xml, 'ratings', None)
+    def _convert_ratings(self, field: str, ratings) -> None:
+        ratings_elem = self._set_tag(self._xml, 'ratings', None)
 
-        for rater, details in value.items():
-            rating = self._add_tag(ratings, 'rating')
+        for rater, details in ratings.items():
+            rating = self._add_tag(ratings_elem, 'rating')
 
             rating.set('name', rater)
             rating.set('max', str(10))  # Regardless of origin, Kodi normalizes ratings to out-of-10
@@ -326,21 +326,39 @@ class _Exporter:
             if 'votes' in details:
                 self._add_tag(rating, 'votes', details['votes'])
 
-    def _convert_set(self, field: str, value) -> None:
+    def _convert_set(self, field: str, set_id) -> None:
         self._remove_tags(self._xml, 'set')
 
-        if value == 0:
+        if set_id == 0:
             return
 
-        result = jsonrpc.request('VideoLibrary.GetMovieSetDetails', setid=value, properties=['title', 'plot'])
+        result = jsonrpc.request('VideoLibrary.GetMovieSetDetails', setid=set_id, properties=['title', 'plot'])
         details = result['setdetails']
 
         st = self._add_tag(self._xml, 'set')
         self._add_tag(st, 'title', details['title'])
         self._add_tag(st, 'overview', details['plot'])
 
-    def _convert_streamdetails(self, field: str, value) -> None:
-        xbmc.log(f'convert streamdetails: {field} with value {value}')
+    def _convert_streamdetails(self, field: str, details) -> None:
+        self._remove_tags(self._xml, 'fileinfo')
+        fileinfo = self._add_tag(self._xml, 'fileinfo')
+        streamdetails = self._add_tag(fileinfo, 'streamdetails')
+
+        for video_info in details['video']:
+            video_info['aspect'] = f'{video_info.get("aspect", 0):.6f}'
+            video_info['durationinseconds'] = video_info.pop('duration', None)
+            self._process_details_set('video', streamdetails, video_info)
+        for audio_info in details['audio']:
+            self._process_details_set('audio', streamdetails, audio_info)
+        for subtitle_info in details['subtitle']:
+            self._process_details_set('subtitle', streamdetails, subtitle_info)
+
+    def _process_details_set(self, details_type: str, parent: ElementTree.Element, info_set: dict) -> None:
+        element = self._add_tag(parent, details_type)
+        for proprty, value in info_set.items():
+            if value is None or value == '':
+                continue
+            self._add_tag(element, proprty, value)
 
     def _convert_trailer(self, field: str, value) -> None:
         xbmc.log(f'convert trailer: {field} with value {value}')
