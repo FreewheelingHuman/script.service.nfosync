@@ -118,8 +118,7 @@ class Service(xbmc.Monitor):
 
         # Always ignore added items if they aren't part a transaction because
         # refreshing an item will trigger a non-transactional update event.
-        if (data.get('added') and (not data.get('transaction')
-                                   or data.get('transaction') and TRIGGERS.ignore_added)):
+        if data.get('added') and (TRIGGERS.ignore_added or not data.get('transaction')):
             return
 
         item = data['item']
