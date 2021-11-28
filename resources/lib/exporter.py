@@ -382,8 +382,21 @@ class _Exporter:
 
         self._set_tag(self._xml, 'trailer', path)
 
-    def _convert_uniqueid(self, field: str, value) -> None:
-        xbmc.log(f'convert uniqueid: {field} with value {value}')
+    def _convert_uniqueid(self, field: str, unique_ids: dict) -> None:
+        del field
+
+        default = None
+        default_tag = self._xml.find(f'uniqueid[@default=\'true\']')
+        if default_tag:
+            default = default_tag.get('type', None)
+
+        self._remove_tags(self._xml, 'uniqueid')
+
+        for service, service_id in unique_ids.items():
+            element = self._add_tag(self._xml, 'uniqueid', service_id)
+            element.set('type', service)
+            if service == default:
+                element.set('default', 'true')
 
     def _add_tag(self, parent: ElementTree.Element, tag: str, text: Optional[str] = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
