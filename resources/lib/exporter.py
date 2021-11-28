@@ -99,8 +99,6 @@ class _Exporter:
         self._fanart_tag = None
 
     def export(self) -> None:
-        xbmc.log('PLACEHOLDER: Export has been triggered.')
-
         parameters = {self._media_type.id_name: self._media_id, 'properties': ['file']}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
         self._file = details['file']
@@ -113,7 +111,7 @@ class _Exporter:
 
         parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
-        xbmc.log(f'Source JSON (Base):\n{details}')
+        ADDON.log(f'Export - Source JSON (Base):\n{details}')
         for field, value in details.items():
             if field in self._ignored_fields:
                 continue
@@ -122,7 +120,7 @@ class _Exporter:
 
         parameters = {'item': {self._media_type.id_name: self._media_id}}
         available_art = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)['availableart']
-        xbmc.log(f'Source JSON (Art):\n{available_art}')
+        ADDON.log(f'Export - Source JSON (Art):\n{available_art}')
         for art in available_art:
             self._convert_art(art)
 
