@@ -7,8 +7,9 @@ import xbmcaddon
 class _Addon(xbmcaddon.Addon):
     def __init__(self):
         super().__init__()
-        self._id = self.getAddonInfo('id')
-        self._name = self.getAddonInfo('name')
+        self._id: Final = self.getAddonInfo('id')
+        self._name: Final = self.getAddonInfo('name')
+        self._version: Final = self.getAddonInfo('version')
 
     @property
     def id(self) -> str:
@@ -21,6 +22,10 @@ class _Addon(xbmcaddon.Addon):
     @property
     def json_name(self) -> str:
         return self._name.replace(' ', '')
+
+    @property
+    def version(self) -> str:
+        return self._version
 
     def log(self, message: str) -> None:
         xbmc.log(f'{self._name}: {message}')

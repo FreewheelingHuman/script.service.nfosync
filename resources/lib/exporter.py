@@ -1,4 +1,5 @@
 import collections
+import datetime
 import xml.etree.ElementTree as ElementTree
 from typing import Callable, Final, Optional
 
@@ -108,6 +109,11 @@ class _Exporter:
                 self._xml = ElementTree.Element(self._media_type.root_tag)
             else:
                 return
+
+        comment = ElementTree.Comment(
+            f'Created {datetime.datetime.now().isoformat(" ", "seconds")} by {ADDON.name} {ADDON.version}'
+        )
+        self._xml.insert(0, comment)
 
         parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
