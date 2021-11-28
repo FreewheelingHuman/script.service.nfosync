@@ -18,6 +18,12 @@ class ActorTagOption(enum.Enum):
     MERGE = 'merge_by_name'
 
 
+class TrailerTagOption(enum.Enum):
+    SKIP = 'skip'
+    NO_LOCAL = 'no_local'
+    NO_PLUGIN = 'no_plugin'
+
+
 class _Sync:
 
     @property
@@ -57,8 +63,8 @@ class _Sync:
         return ActorTagOption(ADDON.getSettingString('sync.actor'))
 
     @property
-    def trailer(self) -> bool:
-        return True  # Eventually this will be an actual setting
+    def trailer(self) -> TrailerTagOption:
+        return TrailerTagOption('no_local')  # Dummy until the actual setting gets added
 
 
 class _Triggers:

@@ -8,7 +8,7 @@ import xbmcvfs
 import resources.lib.filetools as filetools
 import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import ADDON
-from resources.lib.settings import SYNC, ActorTagOption
+from resources.lib.settings import SYNC, ActorTagOption, TrailerTagOption
 
 
 class _ExportFailure(Exception):
@@ -360,8 +360,15 @@ class _Exporter:
                 continue
             self._add_tag(element, proprty, value)
 
-    def _convert_trailer(self, field: str, value) -> None:
-        xbmc.log(f'convert trailer: {field} with value {value}')
+    def _convert_trailer(self, field: str, path) -> None:
+        if SYNC.trailer == TrailerTagOption.SKIP:
+            return
+        if filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-trailer':
+            return
+        if SYNC.trailer == TrailerTagOption.NO_PLUGIN and path.startswith('plugin://'):
+            return
+
+        self._set_tag(self._xml, 'trailer', path)
 
     def _convert_uniqueid(self, field: str, value) -> None:
         xbmc.log(f'convert uniqueid: {field} with value {value}')
