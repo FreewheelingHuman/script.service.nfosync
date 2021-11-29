@@ -4,6 +4,9 @@ from typing import Optional
 
 import xbmcvfs
 
+import resources.lib.jsonrpc as jsonrpc
+import resources.lib.utcdt as utcdt
+
 
 def decode_image(path: str) -> str:
     decoded_path = path.replace('image://', '', 1)
@@ -37,6 +40,19 @@ def get_tvshow_nfo(media_path: str) -> Optional[str]:
     if xbmcvfs.exists(tvshow_nfo):
         nfo_path = tvshow_nfo
     return nfo_path
+
+
+def get_modification_time(media_path: str) -> Optional[utcdt.UtcDt]:
+    if not xbmcvfs.exists(media_path):
+        return None
+
+    result = jsonrpc.request('Files.GetFileDetails', file=media_path, properties=['lastmodified'])
+    if result is None:
+        return None
+
+    local_iso_timestamp = result['filedetails']['lastmodified']
+    dt = utcdt.fromisoformat(local_iso_timestamp)
+    return dt
 
 
 def replace_extension(path: str, extension: str) -> str:
