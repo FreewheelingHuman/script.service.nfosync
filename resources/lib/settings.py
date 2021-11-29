@@ -155,7 +155,7 @@ class _State:
         self._trackers[media_type].set(library_id, 'timestamp', epoch_timestamp)
 
     def write_changes(self):
-        for media_type, tracker in self._trackers:
+        for media_type, tracker in self._trackers.items():
             tracker.write()
 
 
