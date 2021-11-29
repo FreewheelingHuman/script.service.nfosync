@@ -98,7 +98,10 @@ class Tracker:
             byts_to_write.extend(timestamp.to_bytes(self._timestamp_bytes, byteorder='little'))
 
         with xbmcvfs.File(self._file_path, 'w') as file:
-            file.write(byts_to_write)
+            success = file.write(byts_to_write)
+
+        if not success:
+            ADDON.log(f'Unable to write tracker file "{self._file_path}"')
 
     def _import_byts(self, byts: bytearray) -> None:
         byte_reader = _ByteReader(byts)
