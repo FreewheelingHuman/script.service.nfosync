@@ -4,6 +4,7 @@ from typing import Final, Optional
 
 import resources.lib.utcdt as utcdt
 from resources.lib.addon import ADDON
+from resources.lib.tracker import Tracker
 
 
 class MovieNfoType(enum.Enum):
@@ -113,25 +114,13 @@ class _Periodic:
 class _State:
     _last_refresh: Final = 'state.last_refresh'
 
-    class _RefreshExceptions:
-        _refresh_exceptions: Final = 'state.refresh_exceptions'
-
-        def __init__(self):
-            self._cache = json.loads(ADDON.getSettingString(self._refresh_exceptions))
-
-        def __getitem__(self, file: str) -> utcdt.UtcDt:
-            return utcdt.fromisoformat(self._cache[file])
-
-        def __setitem__(self, file: str, timestamp: utcdt.UtcDt) -> None:
-            self._cache[file] = timestamp.isoformat(timespec='seconds')
-            ADDON.setSettingString(self._refresh_exceptions, json.dumps(self._cache))
-
-        def clear(self) -> None:
-            self._cache = {}
-            ADDON.setSettingString(self._refresh_exceptions, '{}')
-
     def __init__(self):
-        self._refresh_exceptions_wrapper: Final = self._RefreshExceptions()
+        self._trackers = {
+            'movie': Tracker('movies'),
+            'movieset': Tracker('moviesets'),
+            'episode': Tracker('episodes'),
+            'tvshow': Tracker('tvshows')
+        }
 
     @property
     def last_refresh(self) -> Optional[utcdt.UtcDt]:
@@ -147,9 +136,26 @@ class _State:
     def last_refresh(self, value: utcdt.UtcDt) -> None:
         ADDON.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
 
-    @property
-    def refresh_exceptions(self) -> _RefreshExceptions:
-        return self._refresh_exceptions_wrapper
+    def get_checksum(self, media_type: str, library_id: int) -> Optional[int]:
+        return self._trackers[media_type].get(library_id, 'checksum')
+
+    def set_checksum(self, media_type: str, library_id: int, checksum: int) -> None:
+        self._trackers[media_type].set(library_id, checksum)
+
+    def get_timestamp(self, media_type: str, library_id: int) -> Optional[utcdt.UtcDt]:
+        epoch_timestamp = self._trackers[media_type].get(library_id, 'timestamp')
+        if epoch_timestamp is None:
+            return None
+        dt = utcdt.fromtimestamp(epoch_timestamp)
+        return dt
+
+    def set_timestamp(self, media_type: str, library_id: int, timestamp: utcdt.UtcDt) -> None:
+        epoch_timestamp = int(timestamp.timestamp())
+        self._trackers[media_type].set(library_id, 'timestamp', epoch_timestamp)
+
+    def write_changes(self):
+        for media_type, tracker in self._trackers:
+            tracker.write()
 
 
 SYNC = _Sync()
