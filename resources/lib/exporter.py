@@ -8,7 +8,7 @@ import xbmcvfs
 import resources.lib.filetools as filetools
 import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import ADDON
-from resources.lib.settings import SYNC, ActorTagOption, TrailerTagOption
+from resources.lib.settings import SYNC, STATE, ActorTagOption, TrailerTagOption
 
 
 class _ExportFailure(Exception):
@@ -38,9 +38,10 @@ class _Exporter:
         'ratings', 'runtime', 'uniqueid'
     ]
 
-    _TypeInfo = collections.namedtuple('_TypeInfo', ['method', 'id_name', 'details', 'container', 'root_tag'])
+    _TypeInfo = collections.namedtuple('_TypeInfo', ['name', 'method', 'id_name', 'details', 'container', 'root_tag'])
     _type_info = {
         'movie': _TypeInfo(
+            name='movie',
             method='VideoLibrary.GetMovieDetails',
             id_name='movieid',
             details=_movie_fields,
@@ -48,6 +49,7 @@ class _Exporter:
             root_tag='movie'
         ),
         'episode': _TypeInfo(
+            name='episode',
             method='VideoLibrary.GetEpisodeDetails',
             id_name='episodeid',
             details=_episode_fields,
@@ -55,6 +57,7 @@ class _Exporter:
             root_tag='episodedetails'
         ),
         'tvshow': _TypeInfo(
+            name='tvshow',
             method='VideoLibrary.GetTVShowDetails',
             id_name='tvshowid',
             details=_tvshow_fields,
@@ -131,6 +134,10 @@ class _Exporter:
             self._convert_art(art)
 
         self._write_nfo()
+
+        timestamp = filetools.get_modification_time(self._nfo)
+        STATE.set_timestamp(self._media_type.name, self._media_id, timestamp)
+        STATE.write_changes()
 
     def _read_nfo(self) -> None:
         if self._media_path is None or self._media_path == '':
