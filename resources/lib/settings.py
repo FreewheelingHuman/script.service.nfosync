@@ -118,7 +118,6 @@ class _State:
     def __init__(self):
         self._trackers = {
             'movie': Tracker('movies'),
-            'movieset': Tracker('moviesets'),
             'episode': Tracker('episodes'),
             'tvshow': Tracker('tvshows')
         }
