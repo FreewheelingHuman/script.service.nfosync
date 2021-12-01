@@ -32,9 +32,6 @@ class _Addon(xbmcaddon.Addon):
     def version(self) -> str:
         return self._version
 
-    def log(self, message: str) -> None:
-        xbmc.log(f'{self._name}: {message}')
-
 
 ADDON: Final = _Addon()
 PLAYER: Final = xbmc.Player()

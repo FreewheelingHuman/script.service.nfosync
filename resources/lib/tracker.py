@@ -3,6 +3,7 @@ from typing import Final, Optional
 import xbmcvfs
 
 from resources.lib.addon import ADDON
+from resources.lib.log import log
 
 
 class _NoMoreBytes(Exception):
@@ -101,7 +102,7 @@ class Tracker:
             success = file.write(byts_to_write)
 
         if not success:
-            ADDON.log(f'Unable to write tracker file "{self._file_path}"')
+            log(f'Unable to write tracker file "{self._file_path}"')
 
     def _import_byts(self, byts: bytearray) -> None:
         byte_reader = _ByteReader(byts)

@@ -4,6 +4,7 @@ from typing import Final, Optional
 import xbmc
 
 from resources.lib.addon import ADDON
+from resources.lib.log import log
 
 
 class _InternalMethods:
@@ -36,7 +37,7 @@ def request(method: str, **params) -> Optional[dict]:
     }
     response = json.loads(xbmc.executeJSONRPC(json.dumps(contents)))
     if 'error' in response:
-        ADDON.log(f'JSONRPC request failed.\nRequest: {contents}\nResponse: {response}')
+        log(f'JSONRPC request failed.\nRequest: {contents}\nResponse: {response}')
 
     return response.get('result', None)
 
