@@ -112,6 +112,21 @@ class _Periodic:
         return 0
 
 
+class _UI:
+
+    @property
+    def sync_progress(self) -> bool:
+        return True  # Placeholder until settings adjusted
+
+    @property
+    def notifications(self) -> bool:
+        return True  # Placeholder until real setting added
+
+    @property
+    def verbose(self) -> bool:
+        return True  # Placeholder until real setting added
+
+
 class _State:
     _last_refresh: Final = 'state.last_refresh'
 
@@ -162,4 +177,5 @@ SYNC = _Sync()
 TRIGGERS = _Triggers()
 AVOIDANCE = _Avoidance()
 PERIODIC = _Periodic()
+UI = _UI()
 STATE = _State()

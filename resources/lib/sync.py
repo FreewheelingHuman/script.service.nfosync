@@ -8,7 +8,7 @@ import xbmcvfs
 import resources.lib.utcdt as utcdt
 import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import ADDON
-from resources.lib.settings import SYNC, STATE
+from resources.lib.settings import SYNC, UI, STATE
 
 
 class Sync:
@@ -18,7 +18,7 @@ class Sync:
         self._todo_clean = SYNC.clean
         self._todo_imprt = SYNC.imprt
         self._todo_scan = SYNC.scan
-        self._visible = SYNC.visible
+        self._visible = UI.sync_progress
 
         self._progress_bar_up = False
 
