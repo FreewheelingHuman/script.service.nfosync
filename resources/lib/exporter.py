@@ -133,6 +133,13 @@ class _Exporter:
         for art in available_art:
             self._convert_art(art)
 
+        if self._media_type == self._type_info['tvshow']:
+            parameters = {'tvshowid': self._media_id, 'properties': ['season', 'title']}
+            seasons = jsonrpc.request('VideoLibrary.GetSeasons', **parameters)['seasons']
+            ADDON.log(f'Export - Source JSON (Seasons):\n{seasons}')
+            for season in seasons:
+                self._convert_season(season)
+
         self._write_nfo()
 
         timestamp = filetools.get_modification_time(self._nfo)
@@ -244,32 +251,37 @@ class _Exporter:
 
         thumb = self._add_tag(self._fanart, 'thumb', path)
         if preview:
-            thumb.set('preview', preview)
+            thumb.set('preview', str(preview))
 
     def _set_thumb(self, art_type: str, preview: Optional[str], path: str, season: Optional[int] = None) -> None:
         # We only clear out art tags of the same type and we only want to do
         # this once per art type, so as not delete new tags we're adding
         # Also, we want to do this seasonally for TV shows
-        art_code = art_type
-        if season:
-            art_code += f'.season{season}'
+        art_code = art_type if season is None else f'{art_type}.season{season}'
         if art_code not in self._cleared_arts:
             self._cleared_arts.append(art_code)
-            if season:
-                query = f'thumb[@aspect=\'{art_type}\'][@season=\'{season}\']'
-            else:
-                query = f'thumb[@aspect=\'{art_type}\']'
-            for elem in self._xml.findall(query):
-                self._xml.remove(elem)
+            self._clear_art(art_type, season)
 
         element = self._add_tag(self._xml, 'thumb')
         element.text = path
-        element.set('aspect', art_type)
+        element.set('aspect', str(art_type))
         if preview:
-            element.set('preview', preview)
-        if season:
+            element.set('preview', str(preview))
+        if season is not None:
             element.set('season', str(season))
             element.set('type', 'season')
+
+    def _clear_art(self, art_type: str, season: Optional[int]) -> None:
+        if season is None:
+            for elem in self._xml.findall(f'thumb[@aspect=\'{art_type}\']'):
+                # ElementTree doesn't let us filter by an attribute not existing,
+                # so we just skip over season images in non-season image clears
+                if elem.get('season'):
+                    continue
+                self._xml.remove(elem)
+        else:
+            for elem in self._xml.findall(f'thumb[@aspect=\'{art_type}\'][@season=\'{season}\']'):
+                self._xml.remove(elem)
 
     def _convert_cast(self, field: str, actors: list) -> None:
         del field
@@ -410,6 +422,19 @@ class _Exporter:
             element.set('type', service)
             if service == default:
                 element.set('default', 'true')
+
+    def _convert_season(self, season: dict) -> None:
+        if 'title' in season:
+            for tag in self._xml.findall(f'namedseason[@number=\'{season["season"]}\']'):
+                self._xml.remove(tag)
+            named_season = self._add_tag(self._xml, 'namedseason', season['title'])
+            named_season.set('number', str(season['season']))
+
+        parameters = {'item': {'seasonid': season['seasonid']}}
+        available_art = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)['availableart']
+        ADDON.log(f'Export - Source JSON (Season {season["season"]} Art):\n{available_art}')
+        for art in available_art:
+            self._convert_art(art, season['season'])
 
     def _add_tag(self, parent: ElementTree.Element, tag: str, text: Optional[str] = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
