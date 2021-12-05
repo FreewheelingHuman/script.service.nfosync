@@ -47,10 +47,10 @@ class _Addon(xbmcaddon.Addon):
     def set_logging(self, verbose: bool) -> None:
         self._verbose = verbose
 
-    def notify(self, heading: str, message: str) -> None:
+    def notify(self, message: str) -> None:
         if not self._notify:
             return
-        self._dialog.notification(heading, message, xbmcgui.NOTIFICATION_ERROR)
+        self._dialog.notification(ADDON.name, message, xbmcgui.NOTIFICATION_ERROR)
 
     def set_notifications(self, notify: bool) -> None:
         self._notify = notify
