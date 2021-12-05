@@ -16,7 +16,7 @@ class _ExportFailure(Exception):
     pass
 
 
-class _Exporter:
+class Exporter:
     _movie_fields: Final = [
         'title', 'genre', 'year', 'director', 'trailer', 'tagline', 'plot',
         'plotoutline', 'originaltitle', 'lastplayed', 'playcount', 'writer',
@@ -93,6 +93,8 @@ class _Exporter:
             'trailer': self._convert_trailer
         }
 
+        self._bulk = False
+
         self._media_id = media_id
         self._media_type = self._type_info[media_type]
 
@@ -103,7 +105,22 @@ class _Exporter:
         self._cleared_arts = []
         self._fanart_tag = None
 
-    def export(self) -> None:
+    def export(self, bulk: Optional[bool] = None) -> bool:
+        if bulk is not None:
+            self._bulk = bulk
+
+        try:
+            self._export()
+
+        except _ExportFailure as failure:
+            ADDON.log(str(failure))
+            if not self._bulk:
+                ADDON.notify(xbmc.getLocalizedString(32043))
+            return False
+
+        return True
+
+    def _export(self) -> None:
         parameters = {self._media_type.id_name: self._media_id, 'properties': ['file']}
         result, _ = jsonrpc.request(self._media_type.method, **parameters)
         self._media_path = result[self._media_type.container]['file']
@@ -143,7 +160,8 @@ class _Exporter:
 
         timestamp = filetools.get_modification_time(self._nfo)
         STATE.set_timestamp(self._media_type.name, self._media_id, timestamp)
-        STATE.write_changes()
+        if not self._bulk:
+            STATE.write_changes()
 
     def _read_nfo(self) -> None:
         if self._media_path is None or self._media_path == '':
@@ -457,11 +475,3 @@ class _Exporter:
     def _remove_tags(self, parent: ElementTree.Element, tag: str) -> None:
         for element in parent.findall(tag):
             parent.remove(element)
-
-
-def export(media_id: int, media_type: str):
-    try:
-        _Exporter(media_id, media_type).export()
-    except _ExportFailure as failure:
-        ADDON.log(str(failure))
-        ADDON.notify(xbmc.getLocalizedString(32043))

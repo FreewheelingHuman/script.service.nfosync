@@ -129,7 +129,7 @@ class Service(xbmc.Monitor):
 
         item = data['item']
         if item['type'] in ['movie', 'tvshow', 'episode']:
-            exporter.export(item['id'], item['type'])
+            exporter.Exporter(item['id'], item['type']).export()
 
     def _patient_sync(self) -> None:
         if self._active_sync:
