@@ -143,7 +143,7 @@ class Exporter:
 
         parameters = {'item': {self._media_type.id_name: self._media_id}}
         result, _ = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)
-        available_art = result['available_art']
+        available_art = result['availableart']
         ADDON.log(f'Export - Source JSON (Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art)
@@ -456,7 +456,8 @@ class Exporter:
             named_season.set('number', str(season['season']))
 
         parameters = {'item': {'seasonid': season['seasonid']}}
-        available_art = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)['availableart']
+        result, _ = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)
+        available_art = result['availableart']
         ADDON.log(f'Export - Source JSON (Season {season["season"]} Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art, season['season'])
