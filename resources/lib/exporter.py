@@ -3,13 +3,12 @@ import datetime
 import xml.etree.ElementTree as ElementTree
 from typing import Callable, Final, Optional
 
-import xbmc
 import xbmcvfs
 
 import resources.lib.filetools as filetools
 import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import ADDON
-from resources.lib.settings import SYNC, STATE, ActorTagOption, TrailerTagOption
+from resources.lib.settings import SYNC, STATE, ActorTagOption, TrailerTagOption, MovieNfoType
 
 
 class _ExportFailure(Exception):
@@ -115,7 +114,7 @@ class Exporter:
         except _ExportFailure as failure:
             ADDON.log(str(failure))
             if not self._bulk:
-                ADDON.notify(xbmc.getLocalizedString(32043))
+                ADDON.notify(ADDON.getLocalizedString(32043))
             return False
 
         return True
@@ -196,10 +195,24 @@ class Exporter:
 
         self._pretty_print(self._xml)
 
+        if self._nfo is None:
+            self._generate_nfo_path()
+
         with xbmcvfs.File(self._nfo, 'w') as file:
             success = file.write(ElementTree.tostring(self._xml, encoding="UTF-8", xml_declaration=True))
         if not success:
             raise _ExportFailure(f'Unable to write NFO file "{self._nfo}"')
+
+    def _generate_nfo_path(self) -> None:
+        if self._media_type == self._type_info['movie']:
+            if SYNC.movie_nfo == MovieNfoType.MOVIE:
+                self._nfo = filetools.create_movie_movie_nfo(self._media_path)
+            else:
+                self._nfo = filetools.create_movie_filename_nfo(self._media_path)
+        elif self._media_type == self._type_info['episode']:
+            self._nfo = filetools.create_episode_nfo(self._media_path)
+        elif self._media_type == self._type_info['tvshow']:
+            self._nfo = filetools.create_tvshow_nfo(self._media_path)
 
     def _pretty_print(self, element, level=1) -> None:
         def indent(indent_level):

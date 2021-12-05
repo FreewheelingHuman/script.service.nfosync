@@ -15,10 +15,18 @@ def decode_image(path: str) -> str:
     return decoded_path
 
 
+def create_movie_movie_nfo(media_path: str) -> str:
+    return _replace_tail(media_path, 'movie.nfo')
+
+
+def create_movie_filename_nfo(media_path: str) -> str:
+    return replace_extension(media_path, '.nfo')
+
+
 def get_movie_nfo(media_path: str) -> Optional[str]:
     nfo_path = None
-    movie_nfo = _replace_tail(media_path, 'movie.nfo')
-    filename_nfo = replace_extension(media_path, '.nfo')
+    movie_nfo = create_movie_movie_nfo(media_path)
+    filename_nfo = create_movie_filename_nfo(media_path)
     if xbmcvfs.exists(movie_nfo):
         nfo_path = movie_nfo
     elif xbmcvfs.exists(filename_nfo):
@@ -26,17 +34,25 @@ def get_movie_nfo(media_path: str) -> Optional[str]:
     return nfo_path
 
 
+def create_episode_nfo(media_path: str) -> str:
+    return replace_extension(media_path, '.nfo')
+
+
 def get_episode_nfo(media_path: str) -> Optional[str]:
     nfo_path = None
-    filename_nfo = replace_extension(media_path, '.nfo')
+    filename_nfo = create_episode_nfo(media_path)
     if xbmcvfs.exists(filename_nfo):
         nfo_path = filename_nfo
     return nfo_path
 
 
+def create_tvshow_nfo(media_path: str) -> str:
+    return xbmcvfs.validatePath(media_path + '/tvshow.nfo')
+
+
 def get_tvshow_nfo(media_path: str) -> Optional[str]:
     nfo_path = None
-    tvshow_nfo = xbmcvfs.validatePath(media_path + '/tvshow.nfo')
+    tvshow_nfo = create_tvshow_nfo(media_path)
     if xbmcvfs.exists(tvshow_nfo):
         nfo_path = tvshow_nfo
     return nfo_path
