@@ -1,4 +1,3 @@
-import collections
 import datetime
 import xml.etree.ElementTree as ElementTree
 from typing import Callable, Final, Optional
@@ -6,7 +5,7 @@ from typing import Callable, Final, Optional
 import xbmcvfs
 
 import resources.lib.filetools as filetools
-import resources.lib.jsonrpc as jsonrpc
+import resources.lib.mediatools as mediatools
 from resources.lib.addon import ADDON
 from resources.lib.settings import SYNC, STATE, ActorTagOption, TrailerTagOption, MovieNfoType
 
@@ -16,61 +15,17 @@ class _ExportFailure(Exception):
 
 
 class Exporter:
-    _movie_fields: Final = [
-        'title', 'genre', 'year', 'director', 'trailer', 'tagline', 'plot',
-        'plotoutline', 'originaltitle', 'lastplayed', 'playcount', 'writer',
-        'studio', 'mpaa', 'cast', 'country', 'runtime', 'setid', 'showlink',
-        'streamdetails', 'top250', 'sorttitle', 'dateadded', 'tag',
-        'userrating', 'ratings', 'premiered', 'uniqueid'
-    ]
-
-    _episode_fields: Final = [
-        'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
-        'director', 'season', 'episode', 'originaltitle', 'showtitle', 'cast',
-        'streamdetails', 'lastplayed', 'dateadded', 'uniqueid',
-        'specialsortseason', 'specialsortepisode', 'userrating', 'ratings'
-    ]
-
-    _tvshow_fields: Final = [
-        'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
-        'episode', 'premiered', 'lastplayed', 'originaltitle',
-        'sorttitle', 'season', 'dateadded', 'tag', 'userrating',
-        'ratings', 'runtime', 'uniqueid'
-    ]
-
-    _TypeInfo = collections.namedtuple('_TypeInfo', ['name', 'method', 'id_name', 'details', 'container', 'root_tag'])
-    _type_info = {
-        'movie': _TypeInfo(
-            name='movie',
-            method='VideoLibrary.GetMovieDetails',
-            id_name='movieid',
-            details=_movie_fields,
-            container='moviedetails',
-            root_tag='movie'
-        ),
-        'episode': _TypeInfo(
-            name='episode',
-            method='VideoLibrary.GetEpisodeDetails',
-            id_name='episodeid',
-            details=_episode_fields,
-            container='episodedetails',
-            root_tag='episodedetails'
-        ),
-        'tvshow': _TypeInfo(
-            name='tvshow',
-            method='VideoLibrary.GetTVShowDetails',
-            id_name='tvshowid',
-            details=_tvshow_fields,
-            container='tvshowdetails',
-            root_tag='tvshow'
-        )
-    }
-
     # Ignoring label. It always gets returned and is a duplicate to title
     # so far as I can see. However, not sure if it is always the same as
     # title and isn't directly exportable, so rather than mapping label
     # to title and not requesting title, we're ignoring it.
     _ignored_fields = ['label', 'movieid', 'episodeid', 'tvshowid']
+
+    _root_tags = {
+        'movie': 'movie',
+        'tvshow': 'tvshow',
+        'episode': 'episodedetails'
+    }
 
     _tag_remaps = {
         'plotoutline': 'outline',
@@ -80,7 +35,7 @@ class Exporter:
         'specialsortepisode': 'displayepisode'
     }
 
-    def __init__(self, media_id: int, media_type: str):
+    def __init__(self, media_type: str, media_id: int):
         self._handlers: Final = {
             'art': self._convert_art,
             'cast': self._convert_cast,
@@ -95,7 +50,7 @@ class Exporter:
         self._bulk = False
 
         self._media_id = media_id
-        self._media_type = self._type_info[media_type]
+        self._media_type = media_type
 
         self._media_path = None
         self._nfo = None
@@ -120,19 +75,15 @@ class Exporter:
         return True
 
     def _export(self) -> None:
-        parameters = {self._media_type.id_name: self._media_id, 'properties': ['file']}
-        result, _ = jsonrpc.request(self._media_type.method, **parameters)
-        self._media_path = result[self._media_type.container]['file']
+        self._media_path, _ = mediatools.get_file(self._media_type, self._media_id)
         self._read_nfo()
         if self._xml is None:
             if SYNC.create_nfo:
-                self._xml = ElementTree.Element(self._media_type.root_tag)
+                self._xml = ElementTree.Element(self._root_tags[self._media_type])
             else:
                 return
 
-        parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
-        result, _ = jsonrpc.request(self._media_type.method, **parameters)
-        details = result[self._media_type.container]
+        details, _ = mediatools.get_details(self._media_type, self._media_id)
         ADDON.log(f'Export - Source JSON (Base):\n{details}', verbose=True)
         for field, value in details.items():
             if field in self._ignored_fields:
@@ -140,17 +91,13 @@ class Exporter:
             handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
             handler(field, value)
 
-        parameters = {'item': {self._media_type.id_name: self._media_id}}
-        result, _ = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)
-        available_art = result['availableart']
+        available_art, _ = mediatools.get_art(self._media_type, self._media_id)
         ADDON.log(f'Export - Source JSON (Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art)
 
-        if self._media_type == self._type_info['tvshow']:
-            parameters = {'tvshowid': self._media_id, 'properties': ['season', 'title']}
-            result, _ = jsonrpc.request('VideoLibrary.GetSeasons', **parameters)
-            seasons = result['seasons']
+        if self._media_type == 'tvshow':
+            seasons, _ = mediatools.get_seasons(self._media_id)
             ADDON.log(f'Export - Source JSON (Seasons):\n{seasons}', verbose=True)
             for season in seasons:
                 self._convert_season(season)
@@ -158,7 +105,7 @@ class Exporter:
         self._write_nfo()
 
         timestamp = filetools.get_modification_time(self._nfo)
-        STATE.set_timestamp(self._media_type.name, self._media_id, timestamp)
+        STATE.set_timestamp(self._media_type, self._media_id, timestamp)
         if not self._bulk:
             STATE.write_changes()
 
@@ -166,11 +113,11 @@ class Exporter:
         if self._media_path is None or self._media_path == '':
             raise _ExportFailure(f'Empty media path for library id "{self._media_id}"')
 
-        if self._media_type == self._type_info['movie']:
+        if self._media_type == 'movie':
             self._nfo = filetools.get_movie_nfo(self._media_path)
-        elif self._media_type == self._type_info['episode']:
+        elif self._media_type == 'episode':
             self._nfo = filetools.get_episode_nfo(self._media_path)
-        elif self._media_type == self._type_info['tvshow']:
+        elif self._media_type == 'tvshow':
             self._nfo = filetools.get_tvshow_nfo(self._media_path)
 
         if self._nfo is None:
@@ -204,14 +151,14 @@ class Exporter:
             raise _ExportFailure(f'Unable to write NFO file "{self._nfo}"')
 
     def _generate_nfo_path(self) -> None:
-        if self._media_type == self._type_info['movie']:
+        if self._media_type == 'movie':
             if SYNC.movie_nfo == MovieNfoType.MOVIE:
                 self._nfo = filetools.create_movie_movie_nfo(self._media_path)
             else:
                 self._nfo = filetools.create_movie_filename_nfo(self._media_path)
-        elif self._media_type == self._type_info['episode']:
+        elif self._media_type == 'episode':
             self._nfo = filetools.create_episode_nfo(self._media_path)
-        elif self._media_type == self._type_info['tvshow']:
+        elif self._media_type == 'tvshow':
             self._nfo = filetools.create_tvshow_nfo(self._media_path)
 
     def _pretty_print(self, element, level=1) -> None:
@@ -268,7 +215,7 @@ class Exporter:
             return True
 
         extensionless_path = filetools.replace_extension(path, '')
-        if self._media_type == self._type_info['tvshow']:
+        if self._media_type == 'tvshow':
             if extensionless_path == f'{self._media_path}{aspect}':
                 return True
             if season:
@@ -403,8 +350,7 @@ class Exporter:
         if set_id == 0:
             return
 
-        result, _ = jsonrpc.request('VideoLibrary.GetMovieSetDetails', setid=set_id, properties=['title', 'plot'])
-        details = result['setdetails']
+        details, _ = mediatools.get_details('movieset', set_id)
 
         st = self._add_tag(self._xml, 'set')
         self._add_tag(st, 'title', details['title'])
@@ -468,9 +414,7 @@ class Exporter:
             named_season = self._add_tag(self._xml, 'namedseason', season['title'])
             named_season.set('number', str(season['season']))
 
-        parameters = {'item': {'seasonid': season['seasonid']}}
-        result, _ = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)
-        available_art = result['availableart']
+        available_art, _ = mediatools.get_art('season', season['seasonid'])
         ADDON.log(f'Export - Source JSON (Season {season["season"]} Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art, season['season'])
