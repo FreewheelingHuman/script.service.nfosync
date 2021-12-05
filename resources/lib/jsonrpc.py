@@ -27,16 +27,14 @@ class _InternalMethods:
 INTERNAL_METHODS = _InternalMethods()
 
 
-def request(method: str, **params) -> Optional[dict]:
+def request(method: str, **params) -> (Optional[dict], str):
     contents = {
         'jsonrpc': '2.0',
         'method': method,
         'params': params,
         'id': 1
     }
-    response = json.loads(xbmc.executeJSONRPC(json.dumps(contents)))
-    if 'error' in response:
-        ADDON.log(f'JSONRPC request failed.\nRequest: {contents}\nResponse: {response}')
+    raw_response = xbmc.executeJSONRPC(json.dumps(contents))
+    response = json.loads(raw_response)
 
-    return response.get('result', None)
-
+    return response.get('result', None), raw_response
