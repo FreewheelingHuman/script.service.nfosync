@@ -186,3 +186,7 @@ msgstr ""
 msgctxt "#32042"
 msgid "Update existing tags"
 msgstr ""
+
+msgctxt "#32043"
+msgid "Export failure - see log for details"
+msgstr ""

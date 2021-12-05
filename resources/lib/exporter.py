@@ -3,6 +3,7 @@ import datetime
 import xml.etree.ElementTree as ElementTree
 from typing import Callable, Final, Optional
 
+import xbmc
 import xbmcvfs
 
 import resources.lib.filetools as filetools
@@ -104,8 +105,8 @@ class _Exporter:
 
     def export(self) -> None:
         parameters = {self._media_type.id_name: self._media_id, 'properties': ['file']}
-        details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
-        self._media_path = details['file']
+        result, _ = jsonrpc.request(self._media_type.method, **parameters)
+        self._media_path = result[self._media_type.container]['file']
         self._read_nfo()
         if self._xml is None:
             if SYNC.create_nfo:
@@ -113,13 +114,9 @@ class _Exporter:
             else:
                 return
 
-        comment = ElementTree.Comment(
-            f'Created {datetime.datetime.now().isoformat(" ", "seconds")} by {ADDON.name} {ADDON.version}'
-        )
-        self._xml.insert(0, comment)
-
         parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
-        details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
+        result, _ = jsonrpc.request(self._media_type.method, **parameters)
+        details = result[self._media_type.container]
         ADDON.log(f'Export - Source JSON (Base):\n{details}', verbose=True)
         for field, value in details.items():
             if field in self._ignored_fields:
@@ -128,14 +125,16 @@ class _Exporter:
             handler(field, value)
 
         parameters = {'item': {self._media_type.id_name: self._media_id}}
-        available_art = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)['availableart']
+        result, _ = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)
+        available_art = result['available_art']
         ADDON.log(f'Export - Source JSON (Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art)
 
         if self._media_type == self._type_info['tvshow']:
             parameters = {'tvshowid': self._media_id, 'properties': ['season', 'title']}
-            seasons = jsonrpc.request('VideoLibrary.GetSeasons', **parameters)['seasons']
+            result, _ = jsonrpc.request('VideoLibrary.GetSeasons', **parameters)
+            seasons = result['seasons']
             ADDON.log(f'Export - Source JSON (Seasons):\n{seasons}', verbose=True)
             for season in seasons:
                 self._convert_season(season)
@@ -172,9 +171,17 @@ class _Exporter:
             raise _ExportFailure(f'Unable to parse NFO file "{self._nfo}" due to error: {error}')
 
     def _write_nfo(self):
+        comment = ElementTree.Comment(
+            f'Created {datetime.datetime.now().isoformat(" ", "seconds")} by {ADDON.name} {ADDON.version}'
+        )
+        self._xml.insert(0, comment)
+
         self._pretty_print(self._xml)
+
         with xbmcvfs.File(self._nfo, 'w') as file:
-            file.write(ElementTree.tostring(self._xml, encoding="UTF-8", xml_declaration=True))
+            success = file.write(ElementTree.tostring(self._xml, encoding="UTF-8", xml_declaration=True))
+        if not success:
+            raise _ExportFailure(f'Unable to write NFO file "{self._nfo}"')
 
     def _pretty_print(self, element, level=1) -> None:
         def indent(indent_level):
@@ -365,7 +372,7 @@ class _Exporter:
         if set_id == 0:
             return
 
-        result = jsonrpc.request('VideoLibrary.GetMovieSetDetails', setid=set_id, properties=['title', 'plot'])
+        result, _ = jsonrpc.request('VideoLibrary.GetMovieSetDetails', setid=set_id, properties=['title', 'plot'])
         details = result['setdetails']
 
         st = self._add_tag(self._xml, 'set')
@@ -457,3 +464,4 @@ def export(media_id: int, media_type: str):
         _Exporter(media_id, media_type).export()
     except _ExportFailure as failure:
         ADDON.log(str(failure))
+        ADDON.notify(xbmc.getLocalizedString(32043))
