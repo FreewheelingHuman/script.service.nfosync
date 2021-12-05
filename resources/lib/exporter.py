@@ -35,7 +35,7 @@ class Exporter:
         'specialsortepisode': 'displayepisode'
     }
 
-    def __init__(self, media_type: str, media_id: int):
+    def __init__(self, media_type: str, library_id: int):
         self._handlers: Final = {
             'art': self._convert_art,
             'cast': self._convert_cast,
@@ -49,7 +49,7 @@ class Exporter:
 
         self._bulk = False
 
-        self._media_id = media_id
+        self._library_id = library_id
         self._media_type = media_type
 
         self._media_path = None
@@ -75,7 +75,7 @@ class Exporter:
         return True
 
     def _export(self) -> None:
-        self._media_path, _ = mediatools.get_file(self._media_type, self._media_id)
+        self._media_path, _ = mediatools.get_file(self._media_type, self._library_id)
         self._read_nfo()
         if self._xml is None:
             if SYNC.create_nfo:
@@ -83,7 +83,7 @@ class Exporter:
             else:
                 return
 
-        details, _ = mediatools.get_details(self._media_type, self._media_id)
+        details, _ = mediatools.get_details(self._media_type, self._library_id)
         ADDON.log(f'Export - Source JSON (Base):\n{details}', verbose=True)
         for field, value in details.items():
             if field in self._ignored_fields:
@@ -91,13 +91,13 @@ class Exporter:
             handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
             handler(field, value)
 
-        available_art, _ = mediatools.get_art(self._media_type, self._media_id)
+        available_art, _ = mediatools.get_art(self._media_type, self._library_id)
         ADDON.log(f'Export - Source JSON (Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art)
 
         if self._media_type == 'tvshow':
-            seasons, _ = mediatools.get_seasons(self._media_id)
+            seasons, _ = mediatools.get_seasons(self._library_id)
             ADDON.log(f'Export - Source JSON (Seasons):\n{seasons}', verbose=True)
             for season in seasons:
                 self._convert_season(season)
@@ -105,13 +105,13 @@ class Exporter:
         self._write_nfo()
 
         timestamp = filetools.get_modification_time(self._nfo)
-        STATE.set_timestamp(self._media_type, self._media_id, timestamp)
+        STATE.set_timestamp(self._media_type, self._library_id, timestamp)
         if not self._bulk:
             STATE.write_changes()
 
     def _read_nfo(self) -> None:
         if self._media_path is None or self._media_path == '':
-            raise _ExportFailure(f'Empty media path for library id "{self._media_id}"')
+            raise _ExportFailure(f'Empty media path for library id "{self._library_id}"')
 
         if self._media_type == 'movie':
             self._nfo = filetools.get_movie_nfo(self._media_path)
