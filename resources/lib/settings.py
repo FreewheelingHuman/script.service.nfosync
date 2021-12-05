@@ -40,7 +40,7 @@ class _Sync:
 
     @property
     def movie_nfo(self) -> MovieNfoType:
-        return MovieNfoType(ADDON.getSettingString('sync.create_nfo'))
+        return MovieNfoType(ADDON.getSettingString('sync.movie_nfo'))
 
     @property
     def imprt(self) -> bool:
