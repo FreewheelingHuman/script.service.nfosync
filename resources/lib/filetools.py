@@ -43,7 +43,7 @@ def get_tvshow_nfo(media_path: str) -> Optional[str]:
 
 
 def get_modification_time(media_path: str) -> Optional[utcdt.UtcDt]:
-    result = jsonrpc.request('Files.GetFileDetails', file=media_path, properties=['lastmodified'])
+    result, _ = jsonrpc.request('Files.GetFileDetails', file=media_path, properties=['lastmodified'])
     if result is None:
         return None
 
