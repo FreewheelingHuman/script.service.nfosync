@@ -1,7 +1,6 @@
 import os
 from typing import Final
 
-import xbmc
 import xbmcgui
 import xbmcvfs
 
@@ -67,18 +66,18 @@ class Sync:
         last_scan = STATE.last_refresh
         scan_time = utcdt.now()
 
-        response = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
-        for movie in response['movies']:
+        result, _ = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
+        for movie in result['movies']:
             if self._need_refresh_movie(movie['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
 
-        response = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
-        for tv_show in response['tvshows']:
+        result, _ = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
+        for tv_show in result['tvshows']:
             if self._need_refresh_tv_show(tv_show['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
 
-        response = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
-        for episode in response['episodes']:
+        result, _ = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
+        for episode in result['episodes']:
             if self._need_refresh_episode(episode['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
@@ -103,7 +102,7 @@ class Sync:
                 return True
 
         except (OSError, OverflowError) as error:
-            xbmc.log(f'Unable to check timestamp of "{file}" due to: {error}')
+            ADDON.log(f'Unable to check timestamp of "{file}" due to: {error}')
 
         return False
 
