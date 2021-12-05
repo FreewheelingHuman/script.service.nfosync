@@ -8,7 +8,6 @@ import xbmcvfs
 import resources.lib.filetools as filetools
 import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import ADDON
-from resources.lib.log import log
 from resources.lib.settings import SYNC, STATE, ActorTagOption, TrailerTagOption
 
 
@@ -121,7 +120,7 @@ class _Exporter:
 
         parameters = {self._media_type.id_name: self._media_id, 'properties': self._media_type.details}
         details = jsonrpc.request(self._media_type.method, **parameters)[self._media_type.container]
-        log(f'Export - Source JSON (Base):\n{details}', verbose=True)
+        ADDON.log(f'Export - Source JSON (Base):\n{details}', verbose=True)
         for field, value in details.items():
             if field in self._ignored_fields:
                 continue
@@ -130,14 +129,14 @@ class _Exporter:
 
         parameters = {'item': {self._media_type.id_name: self._media_id}}
         available_art = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)['availableart']
-        log(f'Export - Source JSON (Art):\n{available_art}', verbose=True)
+        ADDON.log(f'Export - Source JSON (Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art)
 
         if self._media_type == self._type_info['tvshow']:
             parameters = {'tvshowid': self._media_id, 'properties': ['season', 'title']}
             seasons = jsonrpc.request('VideoLibrary.GetSeasons', **parameters)['seasons']
-            log(f'Export - Source JSON (Seasons):\n{seasons}', verbose=True)
+            ADDON.log(f'Export - Source JSON (Seasons):\n{seasons}', verbose=True)
             for season in seasons:
                 self._convert_season(season)
 
@@ -433,7 +432,7 @@ class _Exporter:
 
         parameters = {'item': {'seasonid': season['seasonid']}}
         available_art = jsonrpc.request('VideoLibrary.GetAvailableArt', **parameters)['availableart']
-        log(f'Export - Source JSON (Season {season["season"]} Art):\n{available_art}', verbose=True)
+        ADDON.log(f'Export - Source JSON (Season {season["season"]} Art):\n{available_art}', verbose=True)
         for art in available_art:
             self._convert_art(art, season['season'])
 
@@ -457,4 +456,4 @@ def export(media_id: int, media_type: str):
     try:
         _Exporter(media_id, media_type).export()
     except _ExportFailure as failure:
-        log(str(failure))
+        ADDON.log(str(failure))

@@ -7,7 +7,7 @@ import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
 from resources.lib.addon import ADDON, PLAYER
-from resources.lib.settings import TRIGGERS, AVOIDANCE, PERIODIC, STATE
+from resources.lib.settings import TRIGGERS, AVOIDANCE, PERIODIC, UI, STATE
 from resources.lib.sync import Sync
 
 
@@ -41,6 +41,9 @@ class Alarm:
 class Service(xbmc.Monitor):
     def __init__(self):
         super().__init__()
+
+        ADDON.set_logging(verbose=UI.verbose)
+        ADDON.set_notifications(UI.notifications)
 
         self._active_sync = None
         self._waiting_sync = None
@@ -92,6 +95,9 @@ class Service(xbmc.Monitor):
             self._library_update(data)
 
     def onSettingsChanged(self) -> None:
+        ADDON.set_logging(verbose=UI.verbose)
+        ADDON.set_notifications(UI.notifications)
+
         if self._periodic_trigger.minutes != PERIODIC.period:
             self._periodic_trigger.set(PERIODIC.period)
 
