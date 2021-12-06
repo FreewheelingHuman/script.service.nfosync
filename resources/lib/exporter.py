@@ -5,7 +5,7 @@ from typing import Callable, Final, Optional
 import xbmcvfs
 
 import resources.lib.filetools as filetools
-import resources.lib.mediatools as mediatools
+import resources.lib.media as media
 from resources.lib.addon import ADDON
 from resources.lib.settings import SYNC, STATE, ActorTagOption, TrailerTagOption, MovieNfoType
 
@@ -14,7 +14,7 @@ class _ExportFailure(Exception):
     pass
 
 
-class Exporter:
+class _Exporter:
     # Ignoring label. It always gets returned and is a duplicate to title
     # so far as I can see. However, not sure if it is always the same as
     # title and isn't directly exportable, so rather than mapping label
@@ -35,8 +35,41 @@ class Exporter:
         'specialsortepisode': 'displayepisode'
     }
 
-    def __init__(self, media_type: str, library_id: int):
-        self._handlers: Final = {
+    def __init__(
+            self,
+            media_type: str,
+            library_id: int,
+            bulk: bool,
+            media_path: Optional[str] = None,
+            nfo_path: Optional[str] = None,
+            media_info: media.MediaInfo = None
+    ):
+        self._bulk = bulk
+        self._library_id = library_id
+        self._media_type = media_type
+        self._media_info = media_info
+
+        self._media_path = media_path
+        if self._media_path is None:
+            self._media_path = media.get_file(self._media_type, self._library_id)
+
+        self._xml = None
+        self._nfo_path = nfo_path
+        self._read_nfo()
+        if self._xml is None and SYNC.create_nfo:
+            self._xml = ElementTree.Element(self._root_tags[self._media_type])
+
+        self._cleared_arts = []
+        self._fanart_tag = None
+
+    def export(self) -> None:
+        if self._xml is None:
+            return
+
+        if self._media_info is None:
+            self._media_info = media.get_info(self._media_type, self._library_id)
+
+        handlers = {
             'art': self._convert_art,
             'cast': self._convert_cast,
             'playcount': self._convert_playcount,
@@ -46,93 +79,49 @@ class Exporter:
             'uniqueid': self._convert_uniqueid,
             'trailer': self._convert_trailer
         }
-
-        self._bulk = False
-
-        self._library_id = library_id
-        self._media_type = media_type
-
-        self._media_path = None
-        self._nfo = None
-        self._xml = None
-
-        self._cleared_arts = []
-        self._fanart_tag = None
-
-    def export(self, bulk: Optional[bool] = None) -> bool:
-        if bulk is not None:
-            self._bulk = bulk
-
-        try:
-            self._export()
-
-        except _ExportFailure as failure:
-            ADDON.log(str(failure))
-            if not self._bulk:
-                ADDON.notify(ADDON.getLocalizedString(32043))
-            return False
-
-        return True
-
-    def _export(self) -> None:
-        self._media_path, _ = mediatools.get_file(self._media_type, self._library_id)
-        self._read_nfo()
-        if self._xml is None:
-            if SYNC.create_nfo:
-                self._xml = ElementTree.Element(self._root_tags[self._media_type])
-            else:
-                return
-
-        details, _ = mediatools.get_details(self._media_type, self._library_id)
-        ADDON.log(f'Export - Source JSON (Base):\n{details}', verbose=True)
-        for field, value in details.items():
+        ADDON.log(f'Export - Source Info (Details):\n{self._media_info.details}', verbose=True)
+        for field, value in self._media_info.details.items():
             if field in self._ignored_fields:
                 continue
-            handler: Callable[..., None] = self._handlers.get(field, self._convert_generic)
+            handler: Callable[..., None] = handlers.get(field, self._convert_generic)
             handler(field, value)
 
-        available_art, _ = mediatools.get_art(self._media_type, self._library_id)
-        ADDON.log(f'Export - Source JSON (Art):\n{available_art}', verbose=True)
-        for art in available_art:
+        ADDON.log(f'Export - Source Info (Art):\n{self._media_info.art}', verbose=True)
+        for art in self._media_info.art:
             self._convert_art(art)
 
         if self._media_type == 'tvshow':
-            seasons, _ = mediatools.get_seasons(self._library_id)
-            ADDON.log(f'Export - Source JSON (Seasons):\n{seasons}', verbose=True)
-            for season in seasons:
+            for season in self._media_info.seasons.values():
                 self._convert_season(season)
 
         self._write_nfo()
 
-        timestamp = filetools.get_modification_time(self._nfo)
+        timestamp = filetools.get_modification_time(self._nfo_path)
         STATE.set_timestamp(self._media_type, self._library_id, timestamp)
         if not self._bulk:
             STATE.write_changes()
 
     def _read_nfo(self) -> None:
-        if self._media_path is None or self._media_path == '':
-            raise _ExportFailure(f'Empty media path for library id "{self._library_id}"')
-
         if self._media_type == 'movie':
-            self._nfo = filetools.get_movie_nfo(self._media_path)
+            self._nfo_path = filetools.get_movie_nfo(self._media_path)
         elif self._media_type == 'episode':
-            self._nfo = filetools.get_episode_nfo(self._media_path)
+            self._nfo_path = filetools.get_episode_nfo(self._media_path)
         elif self._media_type == 'tvshow':
-            self._nfo = filetools.get_tvshow_nfo(self._media_path)
+            self._nfo_path = filetools.get_tvshow_nfo(self._media_path)
 
-        if self._nfo is None:
+        if self._nfo_path is None:
             return
 
-        with xbmcvfs.File(self._nfo) as file:
+        with xbmcvfs.File(self._nfo_path) as file:
             nfo_contents = file.read()
 
         if nfo_contents == '':
-            raise _ExportFailure(f'Unable to read NFO or file empty - "{self._nfo}"')
+            raise _ExportFailure(f'Unable to read NFO or file empty - "{self._nfo_path}"')
 
         try:
             self._xml = ElementTree.fromstring(nfo_contents)
         except ElementTree.ParseError as error:
-            raise _ExportFailure(f'Unable to parse NFO file "{self._nfo}" due to error: {error}')
+            raise _ExportFailure(f'Unable to parse NFO file "{self._nfo_path}" due to error: {error}')
 
     def _write_nfo(self):
         comment = ElementTree.Comment(
@@ -142,24 +131,24 @@ class Exporter:
 
         self._pretty_print(self._xml)
 
-        if self._nfo is None:
+        if self._nfo_path is None:
             self._generate_nfo_path()
 
-        with xbmcvfs.File(self._nfo, 'w') as file:
+        with xbmcvfs.File(self._nfo_path, 'w') as file:
             success = file.write(ElementTree.tostring(self._xml, encoding="UTF-8", xml_declaration=True))
         if not success:
-            raise _ExportFailure(f'Unable to write NFO file "{self._nfo}"')
+            raise _ExportFailure(f'Unable to write NFO file "{self._nfo_path}"')
 
     def _generate_nfo_path(self) -> None:
         if self._media_type == 'movie':
             if SYNC.movie_nfo == MovieNfoType.MOVIE:
-                self._nfo = filetools.create_movie_movie_nfo(self._media_path)
+                self._nfo_path = filetools.create_movie_movie_nfo(self._media_path)
             else:
-                self._nfo = filetools.create_movie_filename_nfo(self._media_path)
+                self._nfo_path = filetools.create_movie_filename_nfo(self._media_path)
         elif self._media_type == 'episode':
-            self._nfo = filetools.create_episode_nfo(self._media_path)
+            self._nfo_path = filetools.create_episode_nfo(self._media_path)
         elif self._media_type == 'tvshow':
-            self._nfo = filetools.create_tvshow_nfo(self._media_path)
+            self._nfo_path = filetools.create_tvshow_nfo(self._media_path)
 
     def _pretty_print(self, element, level=1) -> None:
         def indent(indent_level):
@@ -407,17 +396,17 @@ class Exporter:
             if service == default:
                 element.set('default', 'true')
 
-    def _convert_season(self, season: dict) -> None:
-        if 'title' in season:
-            for tag in self._xml.findall(f'namedseason[@number=\'{season["season"]}\']'):
+    def _convert_season(self, season: media.SeasonInfo) -> None:
+        ADDON.log(f'Export - Source JSON (Season {season.details["season"]} Details):\n{season.details}', verbose=True)
+        if 'title' in season.details:
+            for tag in self._xml.findall(f'namedseason[@number=\'{season.details["season"]}\']'):
                 self._xml.remove(tag)
-            named_season = self._add_tag(self._xml, 'namedseason', season['title'])
-            named_season.set('number', str(season['season']))
+            named_season = self._add_tag(self._xml, 'namedseason', season.details['title'])
+            named_season.set('number', str(season.details['season']))
 
-        available_art, _ = mediatools.get_art('season', season['seasonid'])
-        ADDON.log(f'Export - Source JSON (Season {season["season"]} Art):\n{available_art}', verbose=True)
-        for art in available_art:
-            self._convert_art(art, season['season'])
+        ADDON.log(f'Export - Source JSON (Season {season.details["season"]} Art):\n{season.art}', verbose=True)
+        for art in season.art:
+            self._convert_art(art, season.details['season'])
 
     def _add_tag(self, parent: ElementTree.Element, tag: str, text: Optional[str] = None) -> ElementTree.Element:
         element = ElementTree.SubElement(parent, tag)
@@ -433,3 +422,31 @@ class Exporter:
     def _remove_tags(self, parent: ElementTree.Element, tag: str) -> None:
         for element in parent.findall(tag):
             parent.remove(element)
+
+
+def export(
+        media_type: str,
+        library_id: int,
+        media_path: Optional[str] = None,
+        nfo_path: Optional[str] = None,
+        media_info: Optional[media.MediaInfo] = None,
+        bulk: bool = False
+) -> bool:
+    try:
+        exporter = _Exporter(
+            media_type=media_type,
+            library_id=library_id,
+            bulk=bulk,
+            media_path=media_path,
+            nfo_path=nfo_path,
+            media_info=media_info
+        )
+        exporter.export()
+
+    except _ExportFailure as failure:
+        ADDON.log(str(failure))
+        if not bulk:
+            ADDON.notify(ADDON.getLocalizedString(32043))
+        return False
+
+    return True

@@ -1,11 +1,15 @@
 import collections
+import zlib
 from typing import Final
 
 import resources.lib.jsonrpc as jsonrpc
 
 
+MediaInfo = collections.namedtuple('MediaInfo', ['details', 'art', 'seasons', 'checksum'])
+SeasonInfo = collections.namedtuple('SeasonInfo', ['details', 'art'])
+
 _TypeInfo = collections.namedtuple('TypeInfo', ['method', 'id_name', 'details', 'container'])
-TYPE_INFO: Final = {
+_TYPE_INFO: Final = {
     'movieset': _TypeInfo(
         method='VideoLibrary.GetMovieSetDetails',
         id_name='setid',
@@ -55,37 +59,69 @@ TYPE_INFO: Final = {
 }
 
 
-def get_file(media_type_name: str, library_id: int) -> (dict, str):
-    media_type = TYPE_INFO[media_type_name]
+def get_file(media_type: str, library_id: int) -> str:
+    type_info = _TYPE_INFO[media_type]
     result, raw = jsonrpc.request(
-        media_type.method,
-        **{media_type.id_name: library_id, 'properties': ['file']}
+        type_info.method,
+        **{type_info.id_name: library_id, 'properties': ['file']}
     )
-    return result[media_type.container]['file'], raw
+    return result[type_info.container]['file']
 
 
-def get_details(media_type_name: str, library_id: int) -> (dict, str):
-    media_type = TYPE_INFO[media_type_name]
+def _get_details(media_type: str, library_id: int) -> (dict, str):
+    type_info = _TYPE_INFO[media_type]
     result, raw = jsonrpc.request(
-        media_type.method,
-        **{media_type.id_name: library_id, 'properties': media_type.details}
+        type_info.method,
+        **{type_info.id_name: library_id, 'properties': type_info.details}
     )
-    return result[media_type.container], raw
+    return result[type_info.container], raw
 
 
-def get_art(media_type_name: str, library_id: int) -> (dict, str):
-    media_type = TYPE_INFO[media_type_name]
+def _get_art(media_type: str, library_id: int) -> (dict, str):
+    type_info = _TYPE_INFO[media_type]
     result, raw = jsonrpc.request(
         'VideoLibrary.GetAvailableArt',
-        **{'item': {media_type.id_name: library_id}}
+        **{'item': {type_info.id_name: library_id}}
     )
     return result['availableart'], raw
 
 
-def get_seasons(library_id: int) -> (dict, str):
-    media_type = TYPE_INFO['season']
+def _get_seasons(library_id: int) -> (dict, str):
+    type_info = _TYPE_INFO['season']
     result, raw = jsonrpc.request(
         'VideoLibrary.GetSeasons',
-        **{'tvshowid': library_id, 'properties': media_type.details}
+        **{'tvshowid': library_id, 'properties': type_info.details}
     )
     return result['seasons'], raw
+
+
+def get_info(media_type: str, library_id: int) -> MediaInfo:
+    checksum_data = []
+
+    details, raw = _get_details(media_type, library_id)
+    checksum_data.append(raw)
+
+    art, raw = _get_art(media_type, library_id)
+    checksum_data.append(raw)
+
+    seasons = None
+    if media_type == 'tvshow':
+        seasons_list, raw = _get_seasons(library_id)
+        checksum_data.append(raw)
+
+        seasons = {}
+        for season in seasons_list:
+            season_art, raw = _get_art('season', season['seasonid'])
+            seasons[season['season']] = SeasonInfo(details=season, art=season_art)
+            checksum_data.append(raw)
+
+    checksum = zlib.crc32(''.join(checksum_data).encode('utf-8'))
+
+    info = MediaInfo(
+        details=details,
+        art=art,
+        seasons=seasons,
+        checksum=checksum
+    )
+
+    return info
