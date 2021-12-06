@@ -5,7 +5,7 @@ from typing import Final
 import resources.lib.jsonrpc as jsonrpc
 
 
-MediaInfo = collections.namedtuple('MediaInfo', ['details', 'art', 'seasons', 'checksum'])
+MediaInfo = collections.namedtuple('MediaInfo', ['details', 'art', 'movieset', 'seasons', 'checksum'])
 SeasonInfo = collections.namedtuple('SeasonInfo', ['details', 'art'])
 
 _TypeInfo = collections.namedtuple('TypeInfo', ['method', 'id_name', 'details', 'container'])
@@ -104,8 +104,14 @@ def get_info(media_type: str, library_id: int) -> MediaInfo:
     art, raw = _get_art(media_type, library_id)
     checksum_data.append(raw)
 
+    movieset = None
     seasons = None
-    if media_type == 'tvshow':
+
+    if media_type == 'movie' and details['setid'] != 0:
+        movieset, raw = _get_details('movieset', details['setid'])
+        checksum_data.append(raw)
+
+    elif media_type == 'tvshow':
         seasons_list, raw = _get_seasons(library_id)
         checksum_data.append(raw)
 
@@ -120,6 +126,7 @@ def get_info(media_type: str, library_id: int) -> MediaInfo:
     info = MediaInfo(
         details=details,
         art=art,
+        movieset=movieset,
         seasons=seasons,
         checksum=checksum
     )

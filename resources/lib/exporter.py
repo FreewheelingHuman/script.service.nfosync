@@ -1,6 +1,6 @@
 import datetime
 import xml.etree.ElementTree as ElementTree
-from typing import Callable, Final, Optional
+from typing import Callable, Optional
 
 import xbmcvfs
 
@@ -339,11 +339,9 @@ class _Exporter:
         if set_id == 0:
             return
 
-        details, _ = mediatools.get_details('movieset', set_id)
-
         st = self._add_tag(self._xml, 'set')
-        self._add_tag(st, 'title', details['title'])
-        self._add_tag(st, 'overview', details['plot'])
+        self._add_tag(st, 'title', self._media_info.movieset['title'])
+        self._add_tag(st, 'overview', self._media_info.movieset['plot'])
 
     def _convert_streamdetails(self, field: str, details: dict) -> None:
         del field
