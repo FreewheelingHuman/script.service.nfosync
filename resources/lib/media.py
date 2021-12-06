@@ -59,76 +59,74 @@ _TYPE_INFO: Final = {
 }
 
 
-def get_file(media_type: str, library_id: int) -> str:
-    type_info = _TYPE_INFO[media_type]
+def file(type_: str, id_: int) -> str:
+    type_info = _TYPE_INFO[type_]
     result, raw = jsonrpc.request(
         type_info.method,
-        **{type_info.id_name: library_id, 'properties': ['file']}
+        **{type_info.id_name: id_, 'properties': ['file']}
     )
     return result[type_info.container]['file']
 
 
-def _get_details(media_type: str, library_id: int) -> (dict, str):
-    type_info = _TYPE_INFO[media_type]
+def _request_details(type_: str, id_: int) -> (dict, str):
+    type_info = _TYPE_INFO[type_]
     result, raw = jsonrpc.request(
         type_info.method,
-        **{type_info.id_name: library_id, 'properties': type_info.details}
+        **{type_info.id_name: id_, 'properties': type_info.details}
     )
     return result[type_info.container], raw
 
 
-def _get_art(media_type: str, library_id: int) -> (dict, str):
-    type_info = _TYPE_INFO[media_type]
+def _request_art(type_: str, id_: int) -> (dict, str):
+    type_info = _TYPE_INFO[type_]
     result, raw = jsonrpc.request(
         'VideoLibrary.GetAvailableArt',
-        **{'item': {type_info.id_name: library_id}}
+        **{'item': {type_info.id_name: id_}}
     )
     return result['availableart'], raw
 
 
-def _get_seasons(library_id: int) -> (dict, str):
+def _request_seasons(id_: int) -> (dict, str):
     type_info = _TYPE_INFO['season']
     result, raw = jsonrpc.request(
         'VideoLibrary.GetSeasons',
-        **{'tvshowid': library_id, 'properties': type_info.details}
+        **{'tvshowid': id_, 'properties': type_info.details}
     )
     return result['seasons'], raw
 
 
-def get_info(media_type: str, library_id: int) -> MediaInfo:
+def info(type_: str, id_: int) -> MediaInfo:
     checksum_data = []
 
-    details, raw = _get_details(media_type, library_id)
+    details, raw = _request_details(type_, id_)
     checksum_data.append(raw)
 
-    art, raw = _get_art(media_type, library_id)
+    art, raw = _request_art(type_, id_)
     checksum_data.append(raw)
 
     movieset = None
     seasons = None
 
-    if media_type == 'movie' and details['setid'] != 0:
-        movieset, raw = _get_details('movieset', details['setid'])
+    if type_ == 'movie' and details['setid'] != 0:
+        movieset, raw = _request_details('movieset', details['setid'])
         checksum_data.append(raw)
 
-    elif media_type == 'tvshow':
-        seasons_list, raw = _get_seasons(library_id)
+    elif type_ == 'tvshow':
+        seasons_list, raw = _request_seasons(id_)
         checksum_data.append(raw)
 
         seasons = {}
         for season in seasons_list:
-            season_art, raw = _get_art('season', season['seasonid'])
+            season_art, raw = _request_art('season', season['seasonid'])
             seasons[season['season']] = SeasonInfo(details=season, art=season_art)
             checksum_data.append(raw)
 
     checksum = zlib.crc32(''.join(checksum_data).encode('utf-8'))
 
-    info = MediaInfo(
+    return MediaInfo(
         details=details,
         art=art,
         movieset=movieset,
         seasons=seasons,
         checksum=checksum
     )
-
-    return info

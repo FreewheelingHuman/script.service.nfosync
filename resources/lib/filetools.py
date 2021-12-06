@@ -15,54 +15,54 @@ def decode_image(path: str) -> str:
     return decoded_path
 
 
-def create_movie_movie_nfo(media_path: str) -> str:
-    return _replace_tail(media_path, 'movie.nfo')
+def movie_movie_nfo(path: str) -> str:
+    return _replace_tail(path, 'movie.nfo')
 
 
-def create_movie_filename_nfo(media_path: str) -> str:
-    return replace_extension(media_path, '.nfo')
+def movie_filename_nfo(path: str) -> str:
+    return replace_extension(path, '.nfo')
 
 
-def get_movie_nfo(media_path: str) -> Optional[str]:
-    nfo_path = None
-    movie_nfo = create_movie_movie_nfo(media_path)
-    filename_nfo = create_movie_filename_nfo(media_path)
-    if xbmcvfs.exists(movie_nfo):
-        nfo_path = movie_nfo
-    elif xbmcvfs.exists(filename_nfo):
-        nfo_path = filename_nfo
-    return nfo_path
+def find_movie_nfo(path: str) -> Optional[str]:
+    nfo = None
+    movie = movie_movie_nfo(path)
+    filename = movie_filename_nfo(path)
+    if xbmcvfs.exists(movie):
+        nfo = movie
+    elif xbmcvfs.exists(filename):
+        nfo = filename
+    return nfo
 
 
-def create_episode_nfo(media_path: str) -> str:
-    return replace_extension(media_path, '.nfo')
+def episode_nfo(path: str) -> str:
+    return replace_extension(path, '.nfo')
 
 
-def get_episode_nfo(media_path: str) -> Optional[str]:
-    nfo_path = None
-    filename_nfo = create_episode_nfo(media_path)
-    if xbmcvfs.exists(filename_nfo):
-        nfo_path = filename_nfo
-    return nfo_path
+def find_episode_nfo(path: str) -> Optional[str]:
+    nfo = None
+    filename = episode_nfo(path)
+    if xbmcvfs.exists(filename):
+        nfo = filename
+    return nfo
 
 
-def create_tvshow_nfo(media_path: str) -> str:
-    return xbmcvfs.validatePath(media_path + '/tvshow.nfo')
+def tvshow_nfo(path: str) -> str:
+    return xbmcvfs.validatePath(path + '/tvshow.nfo')
 
 
-def get_tvshow_nfo(media_path: str) -> Optional[str]:
-    nfo_path = None
-    tvshow_nfo = create_tvshow_nfo(media_path)
-    if xbmcvfs.exists(tvshow_nfo):
-        nfo_path = tvshow_nfo
-    return nfo_path
+def find_tvshow_nfo(path: str) -> Optional[str]:
+    nfo = None
+    tvshow = tvshow_nfo(path)
+    if xbmcvfs.exists(tvshow):
+        nfo = tvshow
+    return nfo
 
 
-def get_modification_time(media_path: str) -> Optional[utcdt.UtcDt]:
+def modification_time(path: str) -> Optional[utcdt.UtcDt]:
     result, _ = jsonrpc.request(
         'Files.GetFileDetails',
-        fail_ok=True,
-        file=media_path,
+        allow_failure=True,
+        file=path,
         properties=['lastmodified']
     )
     if result is None:
@@ -77,5 +77,5 @@ def replace_extension(path: str, extension: str) -> str:
     return os.path.splitext(path)[0] + extension
 
 
-def _replace_tail(path: str, new_tail: str) -> str:
-    return os.path.split(path)[0] + new_tail
+def _replace_tail(path: str, tail: str) -> str:
+    return os.path.split(path)[0] + tail

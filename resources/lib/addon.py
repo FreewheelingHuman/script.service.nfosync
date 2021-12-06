@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 import xbmc
 import xbmcaddon
@@ -50,11 +50,11 @@ class _Addon(xbmcaddon.Addon):
     def notify(self, message: str) -> None:
         if not self._notify:
             return
-        self._dialog.notification(ADDON.name, message, xbmcgui.NOTIFICATION_ERROR)
+        self._dialog.notification(addon.name, message, xbmcgui.NOTIFICATION_ERROR)
 
     def set_notifications(self, notify: bool) -> None:
         self._notify = notify
 
 
-ADDON: Final = _Addon()
-PLAYER: Final = xbmc.Player()
+addon: Final = _Addon()
+player: Final = xbmc.Player()

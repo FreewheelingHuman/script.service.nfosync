@@ -2,7 +2,7 @@ from typing import Final, Optional
 
 import xbmcvfs
 
-from resources.lib.addon import ADDON
+from resources.lib.addon import addon
 
 
 class _NoMoreBytes(Exception):
@@ -10,16 +10,16 @@ class _NoMoreBytes(Exception):
 
 
 class _ByteReader:
-    def __init__(self, byts: bytearray):
-        self._byts = byts
+    def __init__(self, bytes_: bytearray):
+        self._bytes = bytes_
         self._cursor = 0
 
-    def advance(self, byts_to_advance: int):
-        self._cursor += byts_to_advance
+    def advance(self, bytes_: int) -> None:
+        self._cursor += bytes_
 
-    def read(self, byts_to_read: int) -> bytearray:
-        end_point = self._cursor + byts_to_read
-        result = self._byts[self._cursor:end_point]
+    def read(self, bytes_: int) -> bytearray:
+        end_point = self._cursor + bytes_
+        result = self._bytes[self._cursor:end_point]
         self._cursor = end_point
 
         if not result:
@@ -30,8 +30,8 @@ class _ByteReader:
 
 class Tracker:
     _version_bytes: Final = 2
-    _library_id_bytes: Final = 4
-    _status_bits_bytes: Final = 1
+    _id_bytes: Final = 4
+    _status_bytes: Final = 1
     _checksum_bytes: Final = 4
     _timestamp_bytes: Final = 5
 
@@ -42,42 +42,41 @@ class Tracker:
 
     def __init__(self, name: str):
         self._contents = {}
-        self._changes = False
-        self._file_path: Final = xbmcvfs.translatePath(f'{ADDON.profile}{name}.dat')
+        self._has_unwritten_changes = False
+        self._file: Final = xbmcvfs.translatePath(f'{addon.profile}{name}.dat')
 
-        if not xbmcvfs.exists(self._file_path):
+        if not xbmcvfs.exists(self._file):
             return
 
-        with xbmcvfs.File(self._file_path) as file:
-            byts = file.readBytes()
-            self._import_byts(byts)
+        with xbmcvfs.File(self._file) as file:
+            bytes_ = file.readBytes()
+            self._import_bytes(bytes_)
 
-    def get(self, library_id: int, field: str) -> Optional[int]:
-        record = self._contents.get(library_id, None)
+    def get(self, id_: int, field: str) -> Optional[int]:
+        record = self._contents.get(id_, None)
         if record is None:
             return None
-        value = record.get(field, None)
-        return value
+        return record.get(field, None)
 
-    def set(self, library_id: int, field: str, value: int) -> None:
-        self._changes = True
-        if library_id not in self._contents:
-            self._contents[library_id] = {}
-        self._contents[library_id][field] = value
+    def set(self, id_: int, field: str, value: int) -> None:
+        self._has_unwritten_changes = True
+        if id_ not in self._contents:
+            self._contents[id_] = {}
+        self._contents[id_][field] = value
 
-    def delete(self, library_id: int) -> None:
-        del self._contents[library_id]
+    def delete(self, id_: int) -> None:
+        del self._contents[id_]
 
     def write(self) -> None:
-        if not self._changes:
+        if not self._has_unwritten_changes:
             return
 
-        byts_to_write = bytearray()
+        bytes_ = bytearray()
 
-        byts_to_write.extend(self._version.to_bytes(self._version_bytes, byteorder='little'))
+        bytes_.extend(self._version.to_bytes(self._version_bytes, byteorder='little'))
 
-        for library_id, fields in self._contents.items():
-            byts_to_write.extend(library_id.to_bytes(self._library_id_bytes, byteorder='little'))
+        for id_, fields in self._contents.items():
+            bytes_.extend(id_.to_bytes(self._id_bytes, byteorder='little'))
 
             status_bits = 0
 
@@ -93,37 +92,37 @@ class Tracker:
             else:
                 status_bits = self._set_bit(status_bits, self._timestamp_index)
 
-            byts_to_write.extend(status_bits.to_bytes(self._status_bits_bytes, byteorder='little'))
-            byts_to_write.extend(checksum.to_bytes(self._checksum_bytes, byteorder='little'))
-            byts_to_write.extend(timestamp.to_bytes(self._timestamp_bytes, byteorder='little'))
+            bytes_.extend(status_bits.to_bytes(self._status_bytes, byteorder='little'))
+            bytes_.extend(checksum.to_bytes(self._checksum_bytes, byteorder='little'))
+            bytes_.extend(timestamp.to_bytes(self._timestamp_bytes, byteorder='little'))
 
-        with xbmcvfs.File(self._file_path, 'w') as file:
-            success = file.write(byts_to_write)
+        with xbmcvfs.File(self._file, 'w') as file:
+            success = file.write(bytes_)
 
         if not success:
-            ADDON.log(f'Unable to write tracker file "{self._file_path}"')
+            addon.log(f'Unable to write tracker file "{self._file}"')
 
-    def _import_byts(self, byts: bytearray) -> None:
-        byte_reader = _ByteReader(byts)
+    def _import_bytes(self, bytes_: bytearray) -> None:
+        byte_reader = _ByteReader(bytes_)
         byte_reader.advance(self._version_bytes)  # skip over version info, it's not used right now
 
         while True:
             record = {}
 
             try:
-                library_id = int.from_bytes(byte_reader.read(self._library_id_bytes), byteorder='little')
-                status_bits = int.from_bytes(byte_reader.read(self._status_bits_bytes), byteorder='little')
+                id_ = int.from_bytes(byte_reader.read(self._id_bytes), byteorder='little')
+                status = int.from_bytes(byte_reader.read(self._status_bytes), byteorder='little')
                 checksum = int.from_bytes(byte_reader.read(self._checksum_bytes), byteorder='little')
                 timestamp = int.from_bytes(byte_reader.read(self._timestamp_bytes), byteorder='little')
             except _NoMoreBytes:
                 break
 
-            if self._get_bit(status_bits, self._checksum_index):
+            if self._get_bit(status, self._checksum_index):
                 record['checksum'] = checksum
-            if self._get_bit(status_bits, self._timestamp_index):
+            if self._get_bit(status, self._timestamp_index):
                 record['timestamp'] = timestamp
             if record:
-                self._contents[library_id] = record
+                self._contents[id_] = record
 
     def _get_bit(self, bit_array: int, index: int) -> int:
         return bit_array & (1 << index)

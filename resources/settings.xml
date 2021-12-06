@@ -3,25 +3,25 @@
     <section id="script.service.nfosync">
         <category id="how" label="32001">
             <group id="sync_actions" label="32001">
-                <setting id="sync.clean" type="boolean" label="32015" help="">
+                <setting id="sync.should_clean" type="boolean" label="32015" help="">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="sync.export" type="boolean" label="32002" help="">
+                <setting id="sync.should_export" type="boolean" label="32002" help="">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="sync.create_nfo" type="boolean" label="32013" help="" parent="sync.export">
+                <setting id="sync.can_create_nfo" type="boolean" label="32013" help="" parent="sync.should_export">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                     <dependencies>
-	                    <dependency type="enable" setting="sync.export">true</dependency>
+	                    <dependency type="enable" setting="sync.should_export">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="sync.movie_nfo" type="string" label="32009" help="" parent="sync.create_nfo">
+                <setting id="sync.movie_nfo_naming" type="string" label="32009" help="" parent="sync.can_create_nfo">
                     <level>0</level>
                     <default>filename</default>
                     <constraints>
@@ -35,35 +35,35 @@
                         <heading>32009</heading>
                     </control>
                     <dependencies>
-	                    <dependency type="enable" setting="sync.create_nfo">true</dependency>
+	                    <dependency type="enable" setting="sync.can_create_nfo">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="sync.import" type="boolean" label="32014" help="">
+                <setting id="sync.should_import" type="boolean" label="32014" help="">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="sync.import_first" type="boolean" label="32031" help="" parent="sync.import">
+                <setting id="sync.should_import_first" type="boolean" label="32031" help="" parent="sync.should_import">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                     <dependencies>
-	                    <dependency type="enable" setting="sync.import">true</dependency>
+	                    <dependency type="enable" setting="sync.should_import">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="sync.scan" type="boolean" label="32005" help="">
+                <setting id="sync.should_scan" type="boolean" label="32005" help="">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
             </group>
             <group id="sync_tags" label="32024">
-                <setting id="sync.actor" type="string" label="32025" help="32026">
+                <setting id="sync.actor_handling" type="string" label="32025" help="32026">
                     <level>0</level>
                     <default>skip</default>
                     <constraints>
                         <options>
-                            <option label="32028">skip</option>
+                            <option label="32028">leave</option>
                             <option label="32042">update_by_name</option>
                             <option label="32040">overwrite</option>
                             <option label="32041">merge_by_name</option>
@@ -78,38 +78,38 @@
         </category>
         <category id="when" label="32004">
             <group id="triggers" label="32032">
-                <setting id="triggers.start" type="boolean" label="32033" help="">
+                <setting id="triggers.should_sync_on_start" type="boolean" label="32033" help="">
                     <level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="triggers.scan" type="boolean" label="32034" help="32035">
+                <setting id="triggers.should_sync_on_scan" type="boolean" label="32034" help="32035">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="triggers.update" type="boolean" label="32036" help="">
+                <setting id="triggers.should_export_on_update" type="boolean" label="32036" help="">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="triggers.ignore_added" type="boolean" label="32020" help="" parent="triggers.update">
+                <setting id="triggers.ignores_add_updates"
+                         type="boolean" label="32020" help="" parent="triggers.should_export_on_update">
                    	<level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                     <dependencies>
-	                    <dependency type="enable" setting="triggers.update">true</dependency>
+	                    <dependency type="enable" setting="triggers.should_export_on_update">true</dependency>
                     </dependencies>
                 </setting>
             </group>
             <group id="playback_avoidance" label="32019">
-                <setting id="avoidance.enabled" type="boolean" label="32017" help="">
+                <setting id="avoidance.is_enabled" type="boolean" label="32017" help="">
                    	<level>0</level>
                     <default>true</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="avoidance.wait" type="integer"
-                         label="32021" help="32022" parent="avoidance.enabled">
+                <setting id="avoidance.wait_time" type="integer" label="32021" help="32022" parent="avoidance.is_enabled">
                    	<level>0</level>
                     <default>10</default>
                     <constraints>
@@ -121,17 +121,17 @@
 		                <heading>32021</heading>
 	                </control>
                     <dependencies>
-	                    <dependency type="enable" setting="avoidance.enabled">true</dependency>
+	                    <dependency type="enable" setting="avoidance.is_enabled">true</dependency>
                     </dependencies>
                 </setting>
             </group>
             <group id="periodic" label="32016">
-                <setting id="periodic.enabled" type="boolean" label="32037" help="">
+                <setting id="periodic.is_enabled" type="boolean" label="32037" help="">
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
-                <setting id="periodic.period" type="integer" label="32038" help="32039" parent="periodic.enabled">
+                <setting id="periodic.period" type="integer" label="32038" help="32039" parent="periodic.is_enabled">
                     <level>0</level>
                     <default>2</default>
                     <constraints>
@@ -143,7 +143,7 @@
 		                <heading>32038</heading>
 	                </control>
                     <dependencies>
-	                    <dependency type="enable" setting="periodic.enabled">true</dependency>
+	                    <dependency type="enable" setting="periodic.is_enabled">true</dependency>
                     </dependencies>
                 </setting>
             </group>

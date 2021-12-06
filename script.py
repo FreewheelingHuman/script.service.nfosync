@@ -1,9 +1,9 @@
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.addon import ADDON
+from resources.lib.addon import addon
 
 
 jsonrpc.request(
     'JSONRPC.NotifyAll',
-    sender=ADDON.id,
+    sender=addon.id,
     message=jsonrpc.INTERNAL_METHODS.immediate_sync.send,
 )

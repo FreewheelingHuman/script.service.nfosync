@@ -5,8 +5,8 @@ import typing
 UtcDt = typing.NewType('UtcDt', datetime.datetime)
 
 
-def fromisoformat(date_string: str) -> UtcDt:
-    naive_dt = datetime.datetime.fromisoformat(date_string)
+def fromisoformat(timestamp: str) -> UtcDt:
+    naive_dt = datetime.datetime.fromisoformat(timestamp)
     utc_dt = naive_dt.astimezone(datetime.timezone.utc)
     return typing.cast(UtcDt, utc_dt)
 

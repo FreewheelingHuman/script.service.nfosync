@@ -6,21 +6,21 @@ import xbmc
 import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
-from resources.lib.addon import ADDON, PLAYER
-from resources.lib.settings import TRIGGERS, AVOIDANCE, PERIODIC, UI, STATE
+from resources.lib.addon import addon, player
+from resources.lib.settings import triggers, avoidance, periodic, ui, state
 from resources.lib.sync import Sync
 
 
 class Alarm:
     def __init__(self, name: str, command: str, loop: bool = False):
-        self._name: Final = f'{ADDON.id}.{name}'
+        self._name: Final = f'{addon.id}.{name}'
         self._command: Final = command
         self._loop: Final = ',loop' if loop else ''
 
         self._minutes = 0
 
     @property
-    def active(self) -> bool:
+    def is_active(self) -> bool:
         return bool(self._minutes)
 
     @property
@@ -42,32 +42,32 @@ class Service(xbmc.Monitor):
     def __init__(self):
         super().__init__()
 
-        ADDON.set_logging(verbose=UI.verbose)
-        ADDON.set_notifications(UI.notifications)
+        addon.set_logging(verbose=ui.is_logging_verbose)
+        addon.set_notifications(notify=ui.should_show_notifications)
 
         self._active_sync = None
         self._waiting_sync = None
 
         self._periodic_trigger = Alarm(
             name='periodic.trigger',
-            command=f'NotifyAll({ADDON.id},{jsonrpc.INTERNAL_METHODS.patient_sync.send})',
+            command=f'NotifyAll({addon.id},{jsonrpc.INTERNAL_METHODS.patient_sync.send})',
             loop=True
         )
         self._waiter = Alarm(
             name='avoidance.wait',
-            command=f'NotifyAll({ADDON.id},{jsonrpc.INTERNAL_METHODS.wait_done.send})'
+            command=f'NotifyAll({addon.id},{jsonrpc.INTERNAL_METHODS.wait_done.send})'
         )
 
         # If the last scan time has never been set, we'll need to set it
-        if STATE.last_refresh is None:
-            STATE.last_refresh = utcdt.now()
+        if state.last_refresh is None:
+            state.last_refresh = utcdt.now()
 
-        if TRIGGERS.start:
+        if triggers.should_sync_on_start:
             sync, done = Sync.start()
             if not done:
                 self._active_sync = sync
 
-        self._periodic_trigger.set(PERIODIC.period)
+        self._periodic_trigger.set(periodic.period)
 
         while not self.abortRequested():
             self.waitForAbort(300)
@@ -91,21 +91,21 @@ class Service(xbmc.Monitor):
         elif method == 'Player.OnStop':
             self._play_stop()
 
-        elif method == 'VideoLibrary.OnUpdate' and TRIGGERS.update:
+        elif method == 'VideoLibrary.OnUpdate' and triggers.should_export_on_update:
             self._library_update(data)
 
     def onSettingsChanged(self) -> None:
-        ADDON.set_logging(verbose=UI.verbose)
-        ADDON.set_notifications(UI.notifications)
+        addon.set_logging(verbose=ui.is_logging_verbose)
+        addon.set_notifications(notify=ui.should_show_notifications)
 
-        if self._periodic_trigger.minutes != PERIODIC.period:
-            self._periodic_trigger.set(PERIODIC.period)
+        if self._periodic_trigger.minutes != periodic.period:
+            self._periodic_trigger.set(periodic.period)
 
-        if self._waiter.active and self._waiter.minutes != AVOIDANCE.wait:
-            self._waiter.set(AVOIDANCE.wait)
+        if self._waiter.is_active and self._waiter.minutes != avoidance.wait_time:
+            self._waiter.set(avoidance.wait_time)
 
-        if (self._waiting_sync and (not AVOIDANCE.enabled
-                                    or not AVOIDANCE.wait and not PLAYER.isPlaying())):
+        if (self._waiting_sync and (not avoidance.is_enabled
+                                    or not avoidance.wait_time and not player.isPlaying())):
             self._wait_done()
 
     def _continue_sync(self) -> None:
@@ -124,7 +124,7 @@ class Service(xbmc.Monitor):
 
         # Always ignore added items if they aren't part a transaction because
         # refreshing an item will trigger a non-transactional update event.
-        if data.get('added') and (TRIGGERS.ignore_added or not data.get('transaction')):
+        if data.get('added') and (triggers.ignores_add_updates or not data.get('transaction')):
             return
 
         item = data['item']
@@ -134,15 +134,15 @@ class Service(xbmc.Monitor):
     def _patient_sync(self) -> None:
         if self._active_sync:
             return
-        if (AVOIDANCE.enabled and PLAYER.isPlaying()
-                or self._waiter.active):
+        if (avoidance.is_enabled and player.isPlaying()
+                or self._waiter.is_active):
             self._waiting_sync = Sync()
         else:
             self._immediate_sync()
 
     def _play_stop(self):
-        if AVOIDANCE.wait:
-            self._waiter.set(AVOIDANCE.wait)
+        if avoidance.wait_time:
+            self._waiter.set(avoidance.wait_time)
         elif self._waiting_sync:
             self._wait_done()
 

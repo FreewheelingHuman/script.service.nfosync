@@ -6,24 +6,24 @@ import xbmcvfs
 
 import resources.lib.utcdt as utcdt
 import resources.lib.jsonrpc as jsonrpc
-from resources.lib.addon import ADDON
-from resources.lib.settings import SYNC, UI, STATE
+import resources.lib.settings as settings
+from resources.lib.addon import addon
 
 
 class Sync:
     _progress_bar: Final = xbmcgui.DialogProgressBG()
 
     def __init__(self):
-        self._todo_clean = SYNC.clean
-        self._todo_imprt = SYNC.imprt
-        self._todo_scan = SYNC.scan
-        self._visible = UI.sync_progress
+        self._todo_clean = settings.sync.should_clean
+        self._todo_import = settings.sync.should_import
+        self._todo_scan = settings.sync.should_scan
+        self._visible = settings.ui.should_show_sync
 
         self._progress_bar_up = False
 
         self._awaiting = ''
 
-        self._stages: Final = [self._todo_clean, self._todo_imprt, self._todo_scan].count(True)
+        self._stages: Final = [self._todo_clean, self._todo_import, self._todo_scan].count(True)
 
     @property
     def awaiting(self) -> str:
@@ -38,9 +38,9 @@ class Sync:
             self._awaiting = 'VideoLibrary.OnCleanFinished'
             return False
 
-        if self._todo_imprt:
+        if self._todo_import:
             self._update_dialog(32010)
-            self._todo_imprt = False
+            self._todo_import = False
             self._refresh()
             self._awaiting = ''
 
@@ -63,7 +63,7 @@ class Sync:
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
 
     def _refresh(self) -> None:
-        last_scan = STATE.last_refresh
+        last_scan = settings.state.last_refresh
         scan_time = utcdt.now()
 
         result, _ = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
@@ -81,7 +81,7 @@ class Sync:
             if self._need_refresh_episode(episode['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
-        STATE.last_refresh = scan_time
+        settings.state.last_refresh = scan_time
 
     def _scan(self) -> None:
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
@@ -102,7 +102,7 @@ class Sync:
                 return True
 
         except (OSError, OverflowError) as error:
-            ADDON.log(f'Unable to check timestamp of "{file}" due to: {error}')
+            addon.log(f'Unable to check timestamp of "{file}" due to: {error}')
 
         return False
 
@@ -152,11 +152,11 @@ class Sync:
         if not self._visible:
             return
 
-        heading = ADDON.getLocalizedString(32011)
-        message = ADDON.getLocalizedString(message_num)
+        heading = addon.getLocalizedString(32011)
+        message = addon.getLocalizedString(message_num)
 
         if self._progress_bar_up:
-            stages_to_go = [self._todo_clean, self._todo_imprt, self._todo_scan].count(True)
+            stages_to_go = [self._todo_clean, self._todo_import, self._todo_scan].count(True)
             progress = int((1 - (stages_to_go / self._stages)) * 100)
             self._progress_bar.update(progress, heading, message)
         else:

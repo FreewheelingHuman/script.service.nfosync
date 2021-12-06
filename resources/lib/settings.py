@@ -2,128 +2,124 @@ import enum
 from typing import Final, Optional
 
 import resources.lib.utcdt as utcdt
-from resources.lib.addon import ADDON
+from resources.lib.addon import addon
 from resources.lib.tracker import Tracker
 
 
-class MovieNfoType(enum.Enum):
+class MovieNfoOption(enum.Enum):
     MOVIE = 'movie'
     FILENAME = 'filename'
 
 
-class ActorTagOption(enum.Enum):
-    SKIP = 'skip'
+class ActorOption(enum.Enum):
+    LEAVE = 'leave'
     UPDATE = 'update_by_name'
     OVERWRITE = 'overwrite'
     MERGE = 'merge_by_name'
 
 
-class TrailerTagOption(enum.Enum):
+class TrailerOption(enum.Enum):
+    DEFAULT = 'default'
     SKIP = 'skip'
-    NO_LOCAL = 'no_local'
     NO_PLUGIN = 'no_plugin'
 
 
 class _Sync:
 
     @property
-    def clean(self) -> bool:
-        return ADDON.getSettingBool('sync.clean')
+    def should_clean(self) -> bool:
+        return addon.getSettingBool('sync.should_clean')
 
     @property
-    def export(self) -> bool:
-        return ADDON.getSettingBool('sync.export')
+    def should_export(self) -> bool:
+        return addon.getSettingBool('sync.should_export')
 
     @property
-    def create_nfo(self) -> bool:
-        return ADDON.getSettingBool('sync.create_nfo')
+    def can_create_nfo(self) -> bool:
+        return addon.getSettingBool('sync.can_create_nfo')
 
     @property
-    def movie_nfo(self) -> MovieNfoType:
-        return MovieNfoType(ADDON.getSettingString('sync.movie_nfo'))
+    def movie_nfo_naming(self) -> MovieNfoOption:
+        return MovieNfoOption(addon.getSettingString('sync.movie_nfo_naming'))
 
     @property
-    def imprt(self) -> bool:
-        return ADDON.getSettingBool('sync.import')
+    def should_import(self) -> bool:
+        return addon.getSettingBool('sync.should_import')
 
     @property
-    def imprt_first(self) -> bool:
-        return ADDON.getSettingBool('sync.import_first')
+    def should_import_first(self) -> bool:
+        return addon.getSettingBool('sync.should_import_first')
 
     @property
-    def scan(self) -> bool:
-        return ADDON.getSettingBool('sync.scan')
+    def should_scan(self) -> bool:
+        return addon.getSettingBool('sync.should_scan')
 
     @property
-    def visible(self) -> bool:
-        return ADDON.getSettingBool('sync.visible')
+    def actor_handling(self) -> ActorOption:
+        return ActorOption(addon.getSettingString('sync.actor_handling'))
 
     @property
-    def actor(self) -> ActorTagOption:
-        return ActorTagOption(ADDON.getSettingString('sync.actor'))
-
-    @property
-    def trailer(self) -> TrailerTagOption:
-        return TrailerTagOption('no_local')  # Dummy until the actual setting gets added
+    def trailer_handling(self) -> TrailerOption:
+        return TrailerOption('default')  # Dummy until the actual setting gets added
 
 
 class _Triggers:
 
     @property
-    def start(self) -> bool:
-        return ADDON.getSettingBool('triggers.start')
+    def should_sync_on_start(self) -> bool:
+        return addon.getSettingBool('triggers.should_sync_on_start')
 
     @property
-    def scan(self) -> bool:
-        return ADDON.getSettingBool('triggers.scan')
+    def should_sync_on_scan(self) -> bool:
+        return addon.getSettingBool('triggers.should_sync_on_scan')
 
     @property
-    def update(self) -> bool:
-        return ADDON.getSettingBool('triggers.update')
+    def should_export_on_update(self) -> bool:
+        return addon.getSettingBool('triggers.should_export_on_update')
 
     @property
-    def ignore_added(self) -> bool:
-        return ADDON.getSettingBool('triggers.ignore_added')
+    def ignores_add_updates(self) -> bool:
+        return addon.getSettingBool('triggers.ignores_add_updates')
 
 
 class _Avoidance:
 
     @property
-    def enabled(self) -> bool:
-        return ADDON.getSettingBool('avoidance.enabled')
+    def is_enabled(self) -> bool:
+        return addon.getSettingBool('avoidance.is_enabled')
 
     @property
-    def wait(self) -> int:
-        if self.enabled:
-            return ADDON.getSettingInt('avoidance.wait')
+    def wait_time(self) -> int:
+        if self.is_enabled:
+            return addon.getSettingInt('avoidance.wait_time')
         return 0
 
 
 class _Periodic:
 
     @property
-    def enabled(self) -> bool:
-        return ADDON.getSettingBool('periodic.enabled')
+    def is_enabled(self) -> bool:
+        return addon.getSettingBool('periodic.is_enabled')
 
     @property
     def period(self) -> int:
-        if self.enabled:
-            return ADDON.getSettingInt('periodic.period') * 60
+        if self.is_enabled:
+            return addon.getSettingInt('periodic.period') * 60
         return 0
 
 
 class _UI:
 
     @property
-    def sync_progress(self) -> bool:
+    def should_show_sync(self) -> bool:
         return True  # Placeholder until settings adjusted
 
     @property
-    def notifications(self) -> bool:
+    def should_show_notifications(self) -> bool:
         return True  # Placeholder until real setting added
 
     @property
-    def verbose(self) -> bool:
+    def is_logging_verbose(self) -> bool:
         return True  # Placeholder until real setting added
 
 
@@ -139,7 +135,7 @@ class _State:
 
     @property
     def last_refresh(self) -> Optional[utcdt.UtcDt]:
-        iso_string = ADDON.getSetting(self._last_refresh)
+        iso_string = addon.getSetting(self._last_refresh)
         if iso_string == '':
             return None
 
@@ -149,7 +145,7 @@ class _State:
 
     @last_refresh.setter
     def last_refresh(self, value: utcdt.UtcDt) -> None:
-        ADDON.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
+        addon.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
 
     def get_checksum(self, media_type: str, library_id: int) -> Optional[int]:
         return self._trackers[media_type].get(library_id, 'checksum')
@@ -173,9 +169,9 @@ class _State:
             tracker.write()
 
 
-SYNC = _Sync()
-TRIGGERS = _Triggers()
-AVOIDANCE = _Avoidance()
-PERIODIC = _Periodic()
-UI = _UI()
-STATE = _State()
+sync = _Sync()
+triggers = _Triggers()
+avoidance = _Avoidance()
+periodic = _Periodic()
+ui = _UI()
+state = _State()
