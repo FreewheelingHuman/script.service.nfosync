@@ -6,6 +6,7 @@ import xbmcvfs
 
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
+from resources.lib.addon import addon
 
 
 def decode_image(path: str) -> str:
@@ -59,18 +60,19 @@ def find_tvshow_nfo(path: str) -> Optional[str]:
 
 
 def modification_time(path: str) -> Optional[utcdt.UtcDt]:
-    result, _ = jsonrpc.request(
-        'Files.GetFileDetails',
-        allow_failure=True,
-        file=path,
-        properties=['lastmodified']
-    )
-    if result is None:
-        return None
+    try:
+        result, _ = jsonrpc.request(
+            'Files.GetFileDetails',
+            allow_failure=True,
+            file=path,
+            properties=['lastmodified']
+        )
+        local_iso_timestamp = result['filedetails']['lastmodified']
+        return utcdt.fromisoformat(local_iso_timestamp)
 
-    local_iso_timestamp = result['filedetails']['lastmodified']
-    dt = utcdt.fromisoformat(local_iso_timestamp)
-    return dt
+    except jsonrpc.RequestError as error:
+        addon.log(str(error), verbose=True)
+        return None
 
 
 def replace_extension(path: str, extension: str) -> str:
