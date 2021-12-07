@@ -99,6 +99,7 @@ class _Exporter:
 
         timestamp = filetools.modification_time(self._nfo)
         last_known.set_timestamp(self._type, self._id, timestamp)
+        last_known.set_checksum(self._type, self._id, self._info.checksum)
         if not self._is_subtask:
             last_known.write_changes()
 
