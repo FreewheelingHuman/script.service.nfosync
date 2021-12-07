@@ -63,7 +63,6 @@ def modification_time(path: str) -> Optional[utcdt.UtcDt]:
     try:
         result, _ = jsonrpc.request(
             'Files.GetFileDetails',
-            allow_failure=True,
             file=path,
             properties=['lastmodified']
         )
