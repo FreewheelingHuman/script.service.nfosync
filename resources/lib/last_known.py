@@ -2,6 +2,8 @@ from typing import Final, Optional
 
 import xbmcvfs
 
+import resources.lib.media as media
+import resources.lib.utcdt as utcdt
 from resources.lib.addon import addon
 
 
@@ -28,7 +30,7 @@ class _ByteReader:
         return result
 
 
-class Tracker:
+class _Tracker:
     _version_bytes: Final = 2
     _id_bytes: Final = 4
     _status_bytes: Final = 1
@@ -129,3 +131,51 @@ class Tracker:
 
     def _set_bit(self, bit_array: int, index: int) -> int:
         return bit_array | (1 << index)
+
+
+class _LastKnown:
+    _sync_timestamp: Final = 'state.last_sync'
+
+    def __init__(self):
+        self._trackers = {
+            'movie': _Tracker('movies'),
+            'episode': _Tracker('episodes'),
+            'tvshow': _Tracker('tvshows')
+        }
+
+        if addon.getSettingString(self._sync_timestamp) == '':
+            self.sync_timestamp = utcdt.now()
+
+    @property
+    def sync_timestamp(self) -> utcdt.UtcDt:
+        iso_string = addon.getSettingString(self._sync_timestamp)
+        return utcdt.fromisoformat(iso_string)
+
+    @sync_timestamp.setter
+    def sync_timestamp(self, timestamp: utcdt.UtcDt) -> None:
+        addon.setSettingString(self._sync_timestamp, timestamp.isoformat(timespec='seconds'))
+
+    def checksum(self, type_: str, id_: int) -> Optional[int]:
+        return self._trackers[type_].get(id_, 'checksum')
+
+    def set_checksum(self, type_: str, id_: int, checksum: Optional[int]) -> None:
+        if checksum is None:
+            checksum = media.info(type_, id_).checksum
+        self._trackers[type_].set(id_, checksum)
+
+    def timestamp(self, type_: str, id_: int) -> Optional[utcdt.UtcDt]:
+        epoch_timestamp = self._trackers[type_].get(id_, 'timestamp')
+        if epoch_timestamp is None:
+            return None
+        return utcdt.fromtimestamp(epoch_timestamp)
+
+    def set_timestamp(self, type_: str, id_: int, timestamp: utcdt.UtcDt) -> None:
+        epoch_timestamp = int(timestamp.timestamp())
+        self._trackers[type_].set(id_, 'timestamp', epoch_timestamp)
+
+    def write_changes(self):
+        for tracker in self._trackers.values():
+            tracker.write()
+
+
+last_known = _LastKnown()

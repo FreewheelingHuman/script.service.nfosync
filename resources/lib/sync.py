@@ -8,6 +8,7 @@ import resources.lib.utcdt as utcdt
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.settings as settings
 from resources.lib.addon import addon
+from resources.lib.last_known import last_known
 
 
 class Sync:
@@ -63,7 +64,7 @@ class Sync:
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
 
     def _refresh(self) -> None:
-        last_scan = settings.state.last_refresh
+        last_scan = last_known.sync_timestamp
         scan_time = utcdt.now()
 
         result, _ = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
@@ -81,7 +82,7 @@ class Sync:
             if self._need_refresh_episode(episode['file'], last_scan):
                 jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
 
-        settings.state.last_refresh = scan_time
+        last_known.sync_timestamp = scan_time
 
     def _scan(self) -> None:
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)

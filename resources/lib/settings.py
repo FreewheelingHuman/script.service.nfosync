@@ -1,9 +1,6 @@
 import enum
-from typing import Final, Optional
 
-import resources.lib.utcdt as utcdt
 from resources.lib.addon import addon
-from resources.lib.tracker import Tracker
 
 
 class MovieNfoOption(enum.Enum):
@@ -123,55 +120,8 @@ class _UI:
         return True  # Placeholder until real setting added
 
 
-class _State:
-    _last_refresh: Final = 'state.last_refresh'
-
-    def __init__(self):
-        self._trackers = {
-            'movie': Tracker('movies'),
-            'episode': Tracker('episodes'),
-            'tvshow': Tracker('tvshows')
-        }
-
-    @property
-    def last_refresh(self) -> Optional[utcdt.UtcDt]:
-        iso_string = addon.getSetting(self._last_refresh)
-        if iso_string == '':
-            return None
-
-        last_scan = utcdt.fromisoformat(iso_string)
-
-        return last_scan
-
-    @last_refresh.setter
-    def last_refresh(self, value: utcdt.UtcDt) -> None:
-        addon.setSetting(self._last_refresh, value.isoformat(timespec='seconds'))
-
-    def get_checksum(self, media_type: str, library_id: int) -> Optional[int]:
-        return self._trackers[media_type].get(library_id, 'checksum')
-
-    def set_checksum(self, media_type: str, library_id: int, checksum: int) -> None:
-        self._trackers[media_type].set(library_id, checksum)
-
-    def get_timestamp(self, media_type: str, library_id: int) -> Optional[utcdt.UtcDt]:
-        epoch_timestamp = self._trackers[media_type].get(library_id, 'timestamp')
-        if epoch_timestamp is None:
-            return None
-        dt = utcdt.fromtimestamp(epoch_timestamp)
-        return dt
-
-    def set_timestamp(self, media_type: str, library_id: int, timestamp: utcdt.UtcDt) -> None:
-        epoch_timestamp = int(timestamp.timestamp())
-        self._trackers[media_type].set(library_id, 'timestamp', epoch_timestamp)
-
-    def write_changes(self):
-        for media_type, tracker in self._trackers.items():
-            tracker.write()
-
-
 sync = _Sync()
 triggers = _Triggers()
 avoidance = _Avoidance()
 periodic = _Periodic()
 ui = _UI()
-state = _State()

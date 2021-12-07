@@ -35,11 +35,11 @@ msgid "Scan for new items"
 msgstr ""
 
 msgctxt "#32006"
-msgid "Import State"
+msgid "Sync State"
 msgstr ""
 
 msgctxt "#32007"
-msgid "Time of last refresh scan"
+msgid "Date and time of the last sync"
 msgstr ""
 
 msgctxt "#32008"
@@ -123,9 +123,7 @@ msgid ""
 "All matching is based on exact names."
 msgstr ""
 
-msgctxt "#32027"
-msgid "Refresh exceptions in JSON"
-msgstr ""
+# 32027 - removed
 
 msgctxt "#32028"
 msgid "Leave existing tags"

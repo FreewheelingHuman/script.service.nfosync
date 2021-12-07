@@ -159,7 +159,7 @@
         </category>
         <category id="state" label="32006" help="">
             <group id="5" label="32006">
-                <setting id="state.last_refresh" type="string" label="32007" help="">
+                <setting id="state.last_sync" type="string" label="32007" help="">
                     <level>4</level>
                     <default/>
                     <constraints>
@@ -167,16 +167,6 @@
                     </constraints>
                     <control type="edit" format="string">
                         <heading>32007</heading>
-                    </control>
-                </setting>
-                <setting id="state.refresh_exceptions" type="string" label="32027" help="">
-                    <level>4</level>
-                    <default>{}</default>
-                    <constraints>
-                        <allowempty>true</allowempty>
-                    </constraints>
-                    <control type="edit" format="string">
-                        <heading>32027</heading>
                     </control>
                 </setting>
             </group>

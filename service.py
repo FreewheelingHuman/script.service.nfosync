@@ -5,9 +5,8 @@ import xbmc
 
 import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
-import resources.lib.utcdt as utcdt
+import resources.lib.settings as settings
 from resources.lib.addon import addon, player
-from resources.lib.settings import triggers, avoidance, periodic, ui, state
 from resources.lib.sync import Sync
 
 
@@ -42,8 +41,8 @@ class Service(xbmc.Monitor):
     def __init__(self):
         super().__init__()
 
-        addon.set_logging(verbose=ui.is_logging_verbose)
-        addon.set_notifications(notify=ui.should_show_notifications)
+        addon.set_logging(verbose=settings.ui.is_logging_verbose)
+        addon.set_notifications(notify=settings.ui.should_show_notifications)
 
         self._active_sync = None
         self._waiting_sync = None
@@ -58,16 +57,12 @@ class Service(xbmc.Monitor):
             command=f'NotifyAll({addon.id},{jsonrpc.INTERNAL_METHODS.wait_done.send})'
         )
 
-        # If the last scan time has never been set, we'll need to set it
-        if state.last_refresh is None:
-            state.last_refresh = utcdt.now()
-
-        if triggers.should_sync_on_start:
+        if settings.triggers.should_sync_on_start:
             sync, done = Sync.start()
             if not done:
                 self._active_sync = sync
 
-        self._periodic_trigger.set(periodic.period)
+        self._periodic_trigger.set(settings.periodic.period)
 
         while not self.abortRequested():
             self.waitForAbort(300)
@@ -91,21 +86,21 @@ class Service(xbmc.Monitor):
         elif method == 'Player.OnStop':
             self._play_stop()
 
-        elif method == 'VideoLibrary.OnUpdate' and triggers.should_export_on_update:
+        elif method == 'VideoLibrary.OnUpdate' and settings.triggers.should_export_on_update:
             self._library_update(data)
 
     def onSettingsChanged(self) -> None:
-        addon.set_logging(verbose=ui.is_logging_verbose)
-        addon.set_notifications(notify=ui.should_show_notifications)
+        addon.set_logging(verbose=settings.ui.is_logging_verbose)
+        addon.set_notifications(notify=settings.ui.should_show_notifications)
 
-        if self._periodic_trigger.minutes != periodic.period:
-            self._periodic_trigger.set(periodic.period)
+        if self._periodic_trigger.minutes != settings.periodic.period:
+            self._periodic_trigger.set(settings.periodic.period)
 
-        if self._waiter.is_active and self._waiter.minutes != avoidance.wait_time:
-            self._waiter.set(avoidance.wait_time)
+        if self._waiter.is_active and self._waiter.minutes != settings.avoidance.wait_time:
+            self._waiter.set(settings.avoidance.wait_time)
 
-        if (self._waiting_sync and (not avoidance.is_enabled
-                                    or not avoidance.wait_time and not player.isPlaying())):
+        if (self._waiting_sync and (not settings.avoidance.is_enabled
+                                    or not settings.avoidance.wait_time and not player.isPlaying())):
             self._wait_done()
 
     def _continue_sync(self) -> None:
@@ -124,7 +119,7 @@ class Service(xbmc.Monitor):
 
         # Always ignore added items if they aren't part a transaction because
         # refreshing an item will trigger a non-transactional update event.
-        if data.get('added') and (triggers.ignores_add_updates or not data.get('transaction')):
+        if data.get('added') and (settings.triggers.ignores_add_updates or not data.get('transaction')):
             return
 
         item = data['item']
@@ -134,15 +129,15 @@ class Service(xbmc.Monitor):
     def _patient_sync(self) -> None:
         if self._active_sync:
             return
-        if (avoidance.is_enabled and player.isPlaying()
+        if (settings.avoidance.is_enabled and player.isPlaying()
                 or self._waiter.is_active):
             self._waiting_sync = Sync()
         else:
             self._immediate_sync()
 
     def _play_stop(self):
-        if avoidance.wait_time:
-            self._waiter.set(avoidance.wait_time)
+        if settings.avoidance.wait_time:
+            self._waiter.set(settings.avoidance.wait_time)
         elif self._waiting_sync:
             self._wait_done()
 

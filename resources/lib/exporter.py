@@ -8,6 +8,7 @@ import resources.lib.filetools as filetools
 import resources.lib.media as media
 import resources.lib.settings as settings
 from resources.lib.addon import addon
+from resources.lib.last_known import last_known
 
 
 class _ExportFailure(Exception):
@@ -39,12 +40,12 @@ class _Exporter:
             self,
             type_: str,
             id_: int,
-            bulk: bool,
+            subtask: bool,
             file: Optional[str] = None,
             nfo: Optional[str] = None,
             info: media.MediaInfo = None
     ):
-        self._bulk = bulk
+        self._is_subtask = subtask
         self._id = id_
         self._type = type_
         self._info = info
@@ -97,9 +98,9 @@ class _Exporter:
         self._write_nfo()
 
         timestamp = filetools.modification_time(self._nfo)
-        settings.state.set_timestamp(self._type, self._id, timestamp)
-        if not self._bulk:
-            settings.state.write_changes()
+        last_known.set_timestamp(self._type, self._id, timestamp)
+        if not self._is_subtask:
+            last_known.write_changes()
 
     def _read_nfo(self) -> None:
         if self._type == 'movie':
@@ -428,13 +429,13 @@ def export(
         file: Optional[str] = None,
         nfo: Optional[str] = None,
         info: Optional[media.MediaInfo] = None,
-        bulk: bool = False
+        subtask: bool = False
 ) -> bool:
     try:
         exporter = _Exporter(
             type_=type_,
             id_=id_,
-            bulk=bulk,
+            subtask=subtask,
             file=file,
             nfo=nfo,
             info=info
@@ -443,7 +444,7 @@ def export(
 
     except _ExportFailure as failure:
         addon.log(str(failure))
-        if not bulk:
+        if not subtask:
             addon.notify(addon.getLocalizedString(32043))
         return False
 
