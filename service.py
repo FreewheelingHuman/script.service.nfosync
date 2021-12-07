@@ -7,6 +7,7 @@ import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.settings as settings
 from resources.lib.addon import addon, player
+from resources.lib.last_known import last_known
 from resources.lib.sync import Sync
 
 
@@ -116,13 +117,15 @@ class Service(xbmc.Monitor):
 
     def _library_update(self, data: str) -> None:
         data = json.loads(data)
+        item = data['item']
 
         # Always ignore added items if they aren't part a transaction because
         # refreshing an item will trigger a non-transactional update event.
+        # We still want to update the checksum, however.
         if data.get('added') and (settings.triggers.ignores_add_updates or not data.get('transaction')):
+            last_known.set_checksum(item['type'], item['id'])
             return
 
-        item = data['item']
         if item['type'] in ['movie', 'tvshow', 'episode']:
             exporter.export(item['type'], item['id'])
 
