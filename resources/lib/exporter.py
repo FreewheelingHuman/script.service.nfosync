@@ -98,8 +98,16 @@ class _Exporter:
         self._write_nfo()
 
         timestamp = filetools.modification_time(self._nfo)
-        last_known.set_timestamp(self._type, self._id, timestamp)
+        if timestamp is None:
+            addon.log(
+                f'Unable to update timestamp for {self._type} with ID {self._id}'
+                f'- could not get modified timestamp for file "{self._nfo}"'
+            )
+        else:
+            last_known.set_timestamp(self._type, self._id, timestamp)
+
         last_known.set_checksum(self._type, self._id, self._info.checksum)
+
         if not self._is_subtask:
             last_known.write_changes()
 
@@ -444,7 +452,7 @@ def export(
         exporter.export()
 
     except _ExportFailure as failure:
-        addon.log(str(failure))
+        addon.log(f'Export Failure: {failure}')
         if not subtask:
             addon.notify(addon.getLocalizedString(32043))
         return False
