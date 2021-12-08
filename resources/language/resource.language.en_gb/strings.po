@@ -15,7 +15,7 @@ msgstr ""
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 msgctxt "#32001"
-msgid "Actions to Take"
+msgid "Actions To Take During Sync"
 msgstr ""
 
 msgctxt "#32002"
@@ -43,7 +43,7 @@ msgid "Date and time of the last sync"
 msgstr ""
 
 msgctxt "#32008"
-msgid "Active import?"
+msgid "Sync Settings"
 msgstr ""
 
 msgctxt "#32009"
@@ -83,7 +83,7 @@ msgid "Stop sync from starting during playback"
 msgstr ""
 
 msgctxt "#32018"
-msgid "Other Settings"
+msgid "UI Settings"
 msgstr ""
 
 msgctxt "#32019"
@@ -107,23 +107,20 @@ msgid "Display sync progress"
 msgstr ""
 
 msgctxt "#32024"
-msgid "Tag-specific Options"
+msgid "Export Options"
 msgstr ""
 
 msgctxt "#32025"
-msgid "Actor tag export handling"
+msgid "Actor tag handling"
 msgstr ""
 
 msgctxt "#32026"
-msgid ""
-"What to do when exporting cast info to an NFO that already has it. "
-"Overwrite, but merge: keep any NFO-only tags for actors that match, "
-"but non-matching actors will be removed entirely. Update existing tags: "
-"will update matching existing actor tags but will not add/remove actors. "
-"All matching is based on exact names."
+msgid "What to do when exporting cast info to an NFO that already has it."
 msgstr ""
 
-# 32027 - removed
+msgctxt "#32027"
+msgid "Import Options"
+msgstr ""
 
 msgctxt "#32028"
 msgid "Leave existing tags"
@@ -174,17 +171,100 @@ msgid "Min: 1, Max: 168 (1 week)"
 msgstr ""
 
 msgctxt "#32040"
-msgid "Overwrite existing tags"
+msgid "Overwrite existing tags entirely"
 msgstr ""
 
 msgctxt "#32041"
-msgid "Overwrite, but merge existing info"
+msgid "Overwrite, but merge existing info by exact name"
 msgstr ""
 
 msgctxt "#32042"
-msgid "Update existing tags"
+msgid "Update existing tags, by exact name"
 msgstr ""
 
 msgctxt "#32043"
 msgid "Export failure - see log for details"
+msgstr ""
+
+msgctxt "#32044"
+msgid "Export plugin-based trailers"
+msgstr ""
+
+msgctxt "#32045"
+msgid "This will allow trailers that use a Kodi plugin, which are normally ignored, to be exported"
+msgstr ""
+
+msgctxt "#32046"
+msgid "Logging Settings"
+msgstr ""
+
+msgctxt "#32047"
+msgid "GUI Settings"
+msgstr ""
+
+msgctxt "#32048"
+msgid "Verbose logging"
+msgstr ""
+
+msgctxt "#32049"
+msgid ""
+"This will put out considerably more information in to Kodi's debug log, for troubleshooting purposes. "
+"This is best left off unless you're having a problem with NFO Sync since this can drown out other "
+"information in the log."
+msgstr ""
+
+msgctxt "#32050"
+msgid "Show failure notifications"
+msgstr ""
+
+msgctxt "#32051"
+msgid "Scheduled Sync"
+msgstr ""
+
+msgctxt "#32052"
+msgid "Sync on a schedule"
+msgstr ""
+
+msgctxt "#32053"
+msgid "Run missed syncs ASAP"
+msgstr ""
+
+msgctxt "#32054"
+msgid "Sync immediately if one or more scheduled syncs were missed due to Kodi or NFO Sync not running."
+msgstr ""
+
+msgctxt "#32055"
+msgid "Days to sync on"
+msgstr ""
+
+msgctxt "#32056"
+msgid "Sunday"
+msgstr ""
+
+msgctxt "#32057"
+msgid "Monday"
+msgstr ""
+
+msgctxt "#32058"
+msgid "Tuesday"
+msgstr ""
+
+msgctxt "#32059"
+msgid "Wednesday"
+msgstr ""
+
+msgctxt "#32060"
+msgid "Thursday"
+msgstr ""
+
+msgctxt "#32061"
+msgid "Friday"
+msgstr ""
+
+msgctxt "#32062"
+msgid "Saturday"
+msgstr ""
+
+msgctxt "#32063"
+msgid "Time to sync"
 msgstr ""

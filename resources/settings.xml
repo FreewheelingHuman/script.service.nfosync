@@ -1,10 +1,10 @@
 <?xml version="1.0" ?>
 <settings version="1">
     <section id="script.service.nfosync">
-        <category id="how" label="32001">
+        <category id="how" label="32008">
             <group id="sync_actions" label="32001">
                 <setting id="sync.should_clean" type="boolean" label="32015" help="">
-                    <level>0</level>
+                    <level>3</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
@@ -12,31 +12,6 @@
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
-                </setting>
-                <setting id="sync.can_create_nfo" type="boolean" label="32013" help="" parent="sync.should_export">
-                    <level>0</level>
-                    <default>false</default>
-                    <control type="toggle" />
-                    <dependencies>
-	                    <dependency type="enable" setting="sync.should_export">true</dependency>
-                    </dependencies>
-                </setting>
-                <setting id="sync.movie_nfo_naming" type="string" label="32009" help="" parent="sync.can_create_nfo">
-                    <level>0</level>
-                    <default>filename</default>
-                    <constraints>
-                        <options>
-                            <option label="32029">filename</option>
-                            <option label="32030">movie</option>
-                        </options>
-                        <allowempty>false</allowempty>
-                    </constraints>
-                    <control type="list" format="string">
-                        <heading>32009</heading>
-                    </control>
-                    <dependencies>
-	                    <dependency type="enable" setting="sync.can_create_nfo">true</dependency>
-                    </dependencies>
                 </setting>
                 <setting id="sync.should_import" type="boolean" label="32014" help="">
                     <level>0</level>
@@ -57,10 +32,34 @@
                     <control type="toggle" />
                 </setting>
             </group>
-            <group id="sync_tags" label="32024">
-                <setting id="sync.actor_handling" type="string" label="32025" help="32026">
+            <group id="import" label="32027">
+            </group>
+            <group id="export" label="32024">
+                <setting id="export.can_create_nfo" type="boolean" label="32013" help="">
                     <level>0</level>
-                    <default>skip</default>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="export.movie_nfo_naming" type="string" label="32009" help="" parent="export.can_create_nfo">
+                    <level>1</level>
+                    <default>filename</default>
+                    <constraints>
+                        <options>
+                            <option label="32029">filename</option>
+                            <option label="32030">movie</option>
+                        </options>
+                        <allowempty>false</allowempty>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>32009</heading>
+                    </control>
+                    <dependencies>
+	                    <dependency type="enable" setting="export.can_create_nfo">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="export.actor_handling" type="string" label="32025" help="32026">
+                    <level>1</level>
+                    <default>leave</default>
                     <constraints>
                         <options>
                             <option label="32028">leave</option>
@@ -74,6 +73,11 @@
                         <heading>32025</heading>
                     </control>
                 </setting>
+                <setting id="export.should_export_plugin_trailers" type="boolean" label="32044" help="32045">
+                    <level>1</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
             </group>
         </category>
         <category id="when" label="32004">
@@ -84,7 +88,7 @@
                     <control type="toggle" />
                 </setting>
                 <setting id="triggers.should_sync_on_scan" type="boolean" label="32034" help="32035">
-                    <level>0</level>
+                    <level>2</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
@@ -95,7 +99,7 @@
                 </setting>
                 <setting id="triggers.ignores_add_updates"
                          type="boolean" label="32020" help="" parent="triggers.should_export_on_update">
-                   	<level>0</level>
+                   	<level>2</level>
                     <default>false</default>
                     <control type="toggle" />
                     <dependencies>
@@ -127,12 +131,12 @@
             </group>
             <group id="periodic" label="32016">
                 <setting id="periodic.is_enabled" type="boolean" label="32037" help="">
-                    <level>0</level>
+                    <level>1</level>
                     <default>false</default>
                     <control type="toggle" />
                 </setting>
                 <setting id="periodic.period" type="integer" label="32038" help="32039" parent="periodic.is_enabled">
-                    <level>0</level>
+                    <level>1</level>
                     <default>2</default>
                     <constraints>
                         <minimum>1</minimum>
@@ -147,12 +151,73 @@
                     </dependencies>
                 </setting>
             </group>
+            <group id="scheduled" label="32051">
+                <setting id="scheduled.is_enabled" type="boolean" label="32052" help="">
+                    <level>1</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="scheduled.should_run_missed_syncs" type="boolean" label="32053" help="32054" parent="scheduled.is_enabled">
+                    <level>1</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="scheduled.is_enabled">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="scheduled.time" type="time" label="32063" help="" parent="scheduled.is_enabled">
+                    <level>1</level>
+                    <default>6:00</default>
+                    <control type="button" format="time">
+		                <heading>32063</heading>
+	                </control>
+                    <dependencies>
+	                    <dependency type="enable" setting="scheduled.is_enabled">true</dependency>
+                    </dependencies>
+                </setting>
+                <setting id="scheduled.days" type="list[string]" label="32055" help="" parent="scheduled.is_enabled">
+                    <level>1</level>
+                    <default>sunday,monday,tuesday,wednesday,thursday,friday,saturday</default>
+                    <constraints>
+                        <options>
+                            <option label="32056">sunday</option>
+                            <option label="32057">monday</option>
+                            <option label="32058">tuesday</option>
+                            <option label="32059">wednesday</option>
+                            <option label="32060">thursday</option>
+                            <option label="32061">friday</option>
+                            <option label="32062">saturday</option>
+                        </options>
+                        <allowempty>false</allowempty>
+                        <delimiter>,</delimiter>
+                    </constraints>
+                    <control type="list" format="string">
+                        <heading>32055</heading>
+                        <multiselect>true</multiselect>
+                    </control>
+                    <dependencies>
+	                    <dependency type="enable" setting="scheduled.is_enabled">true</dependency>
+                    </dependencies>
+                </setting>
+            </group>
         </category>
-        <category id="others" label="32018" help="">
-            <group id="misc" label="32018">
-                <setting id="sync.visible" type="boolean" label="32023" help="">
+        <category id="ui" label="32018" help="">
+            <group id="ui.gui" label="32047">
+                <setting id="ui.should_show_sync" type="boolean" label="32023" help="">
                     <level>0</level>
                     <default>true</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="ui.should_show_notifications" type="boolean" label="32050" help="">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                </setting>
+            </group>
+            <group id="ui.logging" label="32046">
+                <setting id="ui.is_logging_verbose" type="boolean" label="32048" help="32049">
+                    <level>0</level>
+                    <default>false</default>
                     <control type="toggle" />
                 </setting>
             </group>
