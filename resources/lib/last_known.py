@@ -161,7 +161,7 @@ class _LastKnown:
     def set_checksum(self, type_: str, id_: int, checksum: Optional[int]) -> None:
         if checksum is None:
             checksum = media.info(type_, id_).checksum
-        self._trackers[type_].set(id_, checksum)
+        self._trackers[type_].set(id_, 'checksum', checksum)
 
     def timestamp(self, type_: str, id_: int) -> Optional[utcdt.UtcDt]:
         epoch_timestamp = self._trackers[type_].get(id_, 'timestamp')
