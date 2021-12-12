@@ -48,6 +48,7 @@ class Sync:
             if self._awaiting:
                 return False
 
+        last_known.write_changes()
         self._close_dialog()
         return True
 
