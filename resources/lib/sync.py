@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from typing import Final
 
 import xbmcgui
@@ -15,16 +16,25 @@ class Sync:
     _progress_bar: Final = xbmcgui.DialogProgressBG()
 
     def __init__(self):
-        self._todo_clean = settings.sync.should_clean
-        self._todo_import = settings.sync.should_import
-        self._todo_scan = settings.sync.should_scan
-        self._visible = settings.ui.should_show_sync
+        # Create a local copy of all settings in case they change mid-sync
+        self._should_clean = settings.sync.should_clean
+        self._should_import = settings.sync.should_import
+        self._should_import_first = settings.sync.should_import_first
+        self._should_export = settings.sync.should_export
+        self._should_scan = settings.sync.should_scan
 
+        self._stages = deque()
+        if self._should_clean:
+            self._stages.append(self._clean)
+        if self._should_import or self._should_export:
+            self._stages.append(self._refresh)
+        if self._scan:
+            self._stages.append(self._scan)
+        self._stage_count = len(self._stages)
+
+        self._should_show = settings.ui.should_show_sync
         self._progress_bar_up = False
-
-        self._awaiting = ''
-
-        self._stages: Final = [self._todo_clean, self._todo_import, self._todo_scan].count(True)
+        self._awaiting = None
 
     @property
     def awaiting(self) -> str:
@@ -32,25 +42,11 @@ class Sync:
 
     # Returns true when it is done
     def resume(self) -> bool:
-        if self._todo_clean:
-            self._update_dialog(32003)
-            self._todo_clean = False
-            self._clean()
-            self._awaiting = 'VideoLibrary.OnCleanFinished'
-            return False
-
-        if self._todo_import:
-            self._update_dialog(32010)
-            self._todo_import = False
-            self._refresh()
-            self._awaiting = ''
-
-        if self._todo_scan:
-            self._update_dialog(32012)
-            self._todo_scan = False
-            self._scan()
-            self._awaiting = 'VideoLibrary.OnScanFinished'
-            return False
+        while self._stages:
+            self._stages[0]()
+            self._stages.popleft()
+            if self._awaiting:
+                return False
 
         self._close_dialog()
         return True
@@ -61,9 +57,16 @@ class Sync:
         return importer, importer.resume()
 
     def _clean(self) -> None:
+        addon.log("Starting clean", verbose=True)
+        self._update_dialog(32003)
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
+        self._awaiting = 'VideoLibrary.OnCleanFinished'
 
     def _refresh(self) -> None:
+        addon.log("Starting import/export", verbose=True)
+
+        self._update_dialog(32010)
+
         last_scan = last_known.sync_timestamp
         scan_time = utcdt.now()
 
@@ -84,8 +87,13 @@ class Sync:
 
         last_known.sync_timestamp = scan_time
 
+        self._awaiting = None
+
     def _scan(self) -> None:
+        addon.log("Starting scan", verbose=True)
+        self._update_dialog(32012)
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
+        self._awaiting = 'VideoLibrary.OnScanFinished'
 
     def _file_warrants_refresh(self, file: str, last_scan: utcdt.UtcDt) -> bool:
         if not xbmcvfs.exists(file):
@@ -142,23 +150,19 @@ class Sync:
         return self._file_warrants_refresh(tv_show_nfo, last_scan)
 
     def _close_dialog(self) -> None:
-        if not self._visible:
-            return
-
         if self._progress_bar_up:
             self._progress_bar.close()
             self._progress_bar_up = False
 
     def _update_dialog(self, message_num: int) -> None:
-        if not self._visible:
+        if not self._should_show:
             return
 
         heading = addon.getLocalizedString(32011)
         message = addon.getLocalizedString(message_num)
 
         if self._progress_bar_up:
-            stages_to_go = [self._todo_clean, self._todo_import, self._todo_scan].count(True)
-            progress = int((1 - (stages_to_go / self._stages)) * 100)
+            progress = int((1 - (len(self._stages) / self._stage_count)) * 100)
             self._progress_bar.update(progress, heading, message)
         else:
             self._progress_bar.create(heading, message)
