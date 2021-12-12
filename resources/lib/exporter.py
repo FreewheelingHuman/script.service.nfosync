@@ -57,7 +57,7 @@ class _Exporter:
         self._xml = None
         self._nfo = nfo
         self._read_nfo()
-        if self._xml is None and settings.sync.can_create_nfo:
+        if self._xml is None and settings.export.can_create_nfo:
             self._xml = ElementTree.Element(self._root_tags[self._type])
 
         self._cleared_arts = []
@@ -151,7 +151,7 @@ class _Exporter:
 
     def _generate_nfo_path(self) -> None:
         if self._type == 'movie':
-            if settings.sync.movie_nfo_naming == settings.MovieNfoOption.MOVIE:
+            if settings.export.movie_nfo_naming == settings.MovieNfoOption.MOVIE:
                 self._nfo = filetools.movie_movie_nfo(self._file)
             else:
                 self._nfo = filetools.movie_filename_nfo(self._file)
@@ -273,16 +273,16 @@ class _Exporter:
         actor_bin = ElementTree.Element('bucket')
         existing_actors = self._xml.findall('actor')
 
-        if existing_actors and settings.sync.actor_handling == settings.ActorOption.LEAVE:
+        if existing_actors and settings.export.actor_handling == settings.ActorOption.LEAVE:
             return
 
-        if settings.sync.actor_handling != settings.ActorOption.OVERWRITE:
+        if settings.export.actor_handling != settings.ActorOption.OVERWRITE:
             actor_bin.extend(existing_actors)
 
         for actor in existing_actors:
             self._xml.remove(actor)
 
-        if settings.sync.actor_handling == settings.ActorOption.UPDATE:
+        if settings.export.actor_handling == settings.ActorOption.UPDATE:
             self._update_cast(actors, actor_bin)
         else:
             self._merge_cast(actors, actor_bin)
@@ -379,11 +379,9 @@ class _Exporter:
     def _convert_trailer(self, field: str, path: str) -> None:
         del field
 
-        if settings.sync.trailer_handling == settings.TrailerOption.SKIP:
-            return
         if filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-trailer':
             return
-        if settings.sync.trailer_handling == settings.TrailerOption.NO_PLUGIN and path.startswith('plugin://'):
+        if path.startswith('plugin://') and not settings.export.should_export_plugin_trailers:
             return
 
         self._set_tag(self._xml, 'trailer', path)

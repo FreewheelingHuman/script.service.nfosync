@@ -1,3 +1,4 @@
+import datetime
 import enum
 
 from resources.lib.addon import addon
@@ -15,12 +16,6 @@ class ActorOption(enum.Enum):
     MERGE = 'merge_by_name'
 
 
-class TrailerOption(enum.Enum):
-    DEFAULT = 'default'
-    SKIP = 'skip'
-    NO_PLUGIN = 'no_plugin'
-
-
 class _Sync:
 
     @property
@@ -30,14 +25,6 @@ class _Sync:
     @property
     def should_export(self) -> bool:
         return addon.getSettingBool('sync.should_export')
-
-    @property
-    def can_create_nfo(self) -> bool:
-        return addon.getSettingBool('sync.can_create_nfo')
-
-    @property
-    def movie_nfo_naming(self) -> MovieNfoOption:
-        return MovieNfoOption(addon.getSettingString('sync.movie_nfo_naming'))
 
     @property
     def should_import(self) -> bool:
@@ -51,13 +38,24 @@ class _Sync:
     def should_scan(self) -> bool:
         return addon.getSettingBool('sync.should_scan')
 
-    @property
-    def actor_handling(self) -> ActorOption:
-        return ActorOption(addon.getSettingString('sync.actor_handling'))
+
+class _Export:
 
     @property
-    def trailer_handling(self) -> TrailerOption:
-        return TrailerOption('default')  # Dummy until the actual setting gets added
+    def can_create_nfo(self) -> bool:
+        return addon.getSettingBool('export.can_create_nfo')
+
+    @property
+    def movie_nfo_naming(self) -> MovieNfoOption:
+        return MovieNfoOption(addon.getSettingString('export.movie_nfo_naming'))
+
+    @property
+    def actor_handling(self) -> ActorOption:
+        return ActorOption(addon.getSettingString('export.actor_handling'))
+
+    @property
+    def should_export_plugin_trailers(self) -> bool:
+        return addon.getSettingBool('export.should_export_plugin_trailers')
 
 
 class _Triggers:
@@ -105,23 +103,45 @@ class _Periodic:
         return 0
 
 
+class _Scheduled:
+
+    @property
+    def is_enabled(self) -> bool:
+        return addon.getSettingBool('scheduled.is_enabled')
+
+    @property
+    def should_run_missed_syncs(self) -> bool:
+        return addon.getSettingBool('scheduled.should_run_missed_syncs')
+
+    @property
+    def time(self) -> datetime.time:
+        time = addon.getSettingString('scheduled.time').split(':')
+        return datetime.time(hour=int(time[0]), minute=int(time[1]))
+
+    @property
+    def days(self) -> list:
+        return addon.getSetting('scheduled.days').split(',')
+
+
 class _UI:
 
     @property
     def should_show_sync(self) -> bool:
-        return True  # Placeholder until settings adjusted
+        return addon.getSettingBool('ui.should_show_sync')
 
     @property
     def should_show_notifications(self) -> bool:
-        return True  # Placeholder until real setting added
+        return addon.getSettingBool('ui.should_show_notifications')
 
     @property
     def is_logging_verbose(self) -> bool:
-        return True  # Placeholder until real setting added
+        return addon.getSettingBool('ui.is_logging_verbose')
 
 
 sync = _Sync()
+export = _Export()
 triggers = _Triggers()
 avoidance = _Avoidance()
 periodic = _Periodic()
+scheduled = _Scheduled()
 ui = _UI()
