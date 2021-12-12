@@ -27,7 +27,7 @@ class Sync:
         if self._should_clean:
             self._stages.append(self._clean)
         if self._should_import or self._should_export:
-            self._stages.append(self._refresh)
+            self._stages.append(self._sync_changes)
         if self._scan:
             self._stages.append(self._scan)
         self._stage_count = len(self._stages)
@@ -53,8 +53,8 @@ class Sync:
 
     @classmethod
     def start(cls) -> ('Sync', bool):
-        importer = cls()
-        return importer, importer.resume()
+        sync = cls()
+        return sync, sync.resume()
 
     def _clean(self) -> None:
         addon.log("Starting clean", verbose=True)
@@ -62,8 +62,8 @@ class Sync:
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
         self._awaiting = 'VideoLibrary.OnCleanFinished'
 
-    def _refresh(self) -> None:
-        addon.log("Starting import/export", verbose=True)
+    def _sync_changes(self) -> None:
+        addon.log("Starting change sync", verbose=True)
 
         self._update_dialog(32010)
 

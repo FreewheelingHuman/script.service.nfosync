@@ -51,7 +51,7 @@ msgid "Movie NFO file name"
 msgstr ""
 
 msgctxt "#32010"
-msgid "Refreshing"
+msgid "Syncing changes"
 msgstr ""
 
 msgctxt "#32011"
