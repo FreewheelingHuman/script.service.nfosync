@@ -1,5 +1,5 @@
 import json
-from typing import Final
+from typing import Optional, Final
 
 import xbmc
 
@@ -31,7 +31,7 @@ class RequestError(Exception):
     pass
 
 
-def request(method: str, **params) -> (dict, str):
+def request(method: str, **params) -> dict:
     contents = {
         'jsonrpc': '2.0',
         'method': method,
@@ -43,4 +43,4 @@ def request(method: str, **params) -> (dict, str):
     if 'error' in response:
         raise RequestError(f'JSONRPC request failed.\nRequest: {contents}\nResponse: {response}')
 
-    return response['result'], raw_response
+    return response['result']
