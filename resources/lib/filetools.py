@@ -1,12 +1,16 @@
 import os
 import urllib.parse
-from typing import Optional
+from typing import Final, Optional
 
 import xbmcvfs
 
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.utcdt as utcdt
 from resources.lib.addon import addon
+
+
+def replace_extension(path: str, extension: str) -> str:
+    return os.path.splitext(path)[0] + extension
 
 
 def decode_image(path: str) -> str:
@@ -17,14 +21,22 @@ def decode_image(path: str) -> str:
 
 
 def movie_movie_nfo(path: str) -> str:
-    return _replace_tail(path, 'movie.nfo')
+    return xbmcvfs.validatePath(os.path.split(path)[0] + '/movie.nfo')
 
 
 def movie_filename_nfo(path: str) -> str:
     return replace_extension(path, '.nfo')
 
 
-def find_movie_nfo(path: str) -> Optional[str]:
+def tvshow_nfo(path: str) -> str:
+    return xbmcvfs.validatePath(path + '/tvshow.nfo')
+
+
+def episode_nfo(path: str) -> str:
+    return replace_extension(path, '.nfo')
+
+
+def _find_movie_nfo(path: str) -> Optional[str]:
     nfo = None
     movie = movie_movie_nfo(path)
     filename = movie_filename_nfo(path)
@@ -35,11 +47,15 @@ def find_movie_nfo(path: str) -> Optional[str]:
     return nfo
 
 
-def episode_nfo(path: str) -> str:
-    return replace_extension(path, '.nfo')
+def _find_tvshow_nfo(path: str) -> Optional[str]:
+    nfo = None
+    tvshow = tvshow_nfo(path)
+    if xbmcvfs.exists(tvshow):
+        nfo = tvshow
+    return nfo
 
 
-def find_episode_nfo(path: str) -> Optional[str]:
+def _find_episode_nfo(path: str) -> Optional[str]:
     nfo = None
     filename = episode_nfo(path)
     if xbmcvfs.exists(filename):
@@ -47,16 +63,15 @@ def find_episode_nfo(path: str) -> Optional[str]:
     return nfo
 
 
-def tvshow_nfo(path: str) -> str:
-    return xbmcvfs.validatePath(path + '/tvshow.nfo')
+_nfo_finders: Final = {
+    'movie': _find_movie_nfo,
+    'tvshow': _find_tvshow_nfo,
+    'episode': _find_episode_nfo
+}
 
 
-def find_tvshow_nfo(path: str) -> Optional[str]:
-    nfo = None
-    tvshow = tvshow_nfo(path)
-    if xbmcvfs.exists(tvshow):
-        nfo = tvshow
-    return nfo
+def find_nfo(type_, path: str) -> Optional[str]:
+    return _nfo_finders[type_](path)
 
 
 def modification_time(path: str) -> Optional[utcdt.UtcDt]:
@@ -72,11 +87,3 @@ def modification_time(path: str) -> Optional[utcdt.UtcDt]:
     except jsonrpc.RequestError as error:
         addon.log(str(error), verbose=True)
         return None
-
-
-def replace_extension(path: str, extension: str) -> str:
-    return os.path.splitext(path)[0] + extension
-
-
-def _replace_tail(path: str, tail: str) -> str:
-    return os.path.split(path)[0] + tail

@@ -134,13 +134,7 @@ class _Exporter:
             last_known.write_changes()
 
     def _read_nfo(self) -> None:
-        if self._type == 'movie':
-            self._nfo = filetools.find_movie_nfo(self._file)
-        elif self._type == 'episode':
-            self._nfo = filetools.find_episode_nfo(self._file)
-        elif self._type == 'tvshow':
-            self._nfo = filetools.find_tvshow_nfo(self._file)
-
+        self._nfo = filetools.find_nfo(self._type, self._file)
         if self._nfo is None:
             return
 
