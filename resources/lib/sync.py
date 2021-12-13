@@ -1,13 +1,13 @@
-import os
 from collections import deque
 from typing import Final
 
 import xbmcgui
-import xbmcvfs
 
-import resources.lib.utcdt as utcdt
+import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
+import resources.lib.media as media
 import resources.lib.settings as settings
+import resources.lib.utcdt as utcdt
 from resources.lib.addon import addon
 from resources.lib.last_known import last_known
 
@@ -32,9 +32,14 @@ class Sync:
             self._stages.append(self._scan)
         self._stage_count = len(self._stages)
 
+        self._last_scan = last_known.sync_timestamp
+
         self._should_show = settings.ui.should_show_sync
         self._progress_bar_up = False
+
         self._awaiting = None
+
+        self._failures = False
 
     @property
     def awaiting(self) -> str:
@@ -50,6 +55,10 @@ class Sync:
 
         last_known.write_changes()
         self._close_dialog()
+
+        if self._failures:
+            addon.notify(32064)
+
         return True
 
     @classmethod
@@ -68,87 +77,72 @@ class Sync:
 
         self._update_dialog(32010)
 
-        last_scan = last_known.sync_timestamp
         scan_time = utcdt.now()
 
-        result, _ = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
+        result = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
         for movie in result['movies']:
-            if self._need_refresh_movie(movie['file'], last_scan):
-                jsonrpc.request('VideoLibrary.RefreshMovie', movieid=movie['movieid'])
+            self._sync_item(media.MediaInfo('movie', movie['movieid'], file=movie['file']))
 
-        result, _ = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
+        result = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
         for tv_show in result['tvshows']:
-            if self._need_refresh_tv_show(tv_show['file'], last_scan):
-                jsonrpc.request('VideoLibrary.RefreshTVShow', tvshowid=tv_show['tvshowid'])
+            self._sync_item(media.MediaInfo('tvshow', tv_show['tvshowid'], file=tv_show['file']))
 
-        result, _ = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
+        result = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
         for episode in result['episodes']:
-            if self._need_refresh_episode(episode['file'], last_scan):
-                jsonrpc.request('VideoLibrary.RefreshEpisode', episodeid=episode['episodeid'])
+            self._sync_item(media.MediaInfo('episode', episode['episodeid'], file=episode['file']))
 
         last_known.sync_timestamp = scan_time
 
         self._awaiting = None
+
+    def _sync_item(self, info: media.MediaInfo) -> None:
+        should_import = self._item_requires_import(info) if self._should_import else False
+
+        if self._should_export:
+            self._export_if_needed(info, should_import)
+
+        if should_import:
+            self._import(info)
+
+    def _item_requires_import(self, info: media.MediaInfo) -> bool:
+        modification_time = info.nfo_modification_time
+        if modification_time is None:
+            return False
+
+        last_modification_time = last_known.timestamp(info.type, info.id)
+        if last_modification_time is None:
+            last_modification_time = self._last_scan
+
+        if modification_time > last_modification_time:
+            return True
+
+        return False
+
+    def _import(self, info: media.MediaInfo):
+        addon.log(f'Sync - "{info.details["title"]}" has been flagged for import.', verbose=True)
+        jsonrpc.request(
+            media.TYPE_INFO[info.type].refresh_method,
+            **{media.TYPE_INFO[info.type].id_name: info.id}
+        )
+
+    def _export_if_needed(self, info: media.MediaInfo, should_import: bool) -> None:
+        last_checksum = last_known.checksum(info.type, info.id)
+
+        if last_checksum == info.checksum:
+            return
+        addon.log(f'Sync - Exporting "{info.details["title"]}" due to checksum difference.')
+
+        overwrite = not should_import if self._should_import_first else None
+        success = exporter.export(info=info, overwrite=overwrite)
+
+        if not success:
+            self._failures = True
 
     def _scan(self) -> None:
         addon.log("Starting scan", verbose=True)
         self._update_dialog(32012)
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
         self._awaiting = 'VideoLibrary.OnScanFinished'
-
-    def _file_warrants_refresh(self, file: str, last_scan: utcdt.UtcDt) -> bool:
-        if not xbmcvfs.exists(file):
-            return False
-
-        stats = xbmcvfs.Stat(file)
-
-        # Stat doesn't give any indication if it was successful.
-        # If it failed, then st_mtime will be random garbage.
-        # If this happens to be a valid POSIX timestamp, then we get an erroneous result, unfortunately.
-        # If it isn't a valid POSIX timestamp, we get an exception we can at least handle
-        try:
-            last_modified = utcdt.fromtimestamp(stats.st_mtime())
-            if last_modified > last_scan:
-                return True
-
-        except (OSError, OverflowError) as error:
-            addon.log(f'Unable to check timestamp of "{file}" due to: {error}')
-
-        return False
-
-    def _need_refresh_episode(self, file: str, last_scan: utcdt.UtcDt) -> bool:
-        # Ignore missing files
-        if not xbmcvfs.exists(file):
-            return False
-
-        filename_nfo = os.path.splitext(file)[0] + '.nfo'
-        return self._file_warrants_refresh(filename_nfo, last_scan)
-
-    def _need_refresh_movie(self, file: str, last_scan: utcdt.UtcDt) -> bool:
-        # Ignore missing files
-        if not xbmcvfs.exists(file):
-            return False
-
-        if self._file_warrants_refresh(file, last_scan):
-            return True
-
-        filename_nfo = os.path.splitext(file)[0] + '.nfo'
-        if self._file_warrants_refresh(filename_nfo, last_scan):
-            return True
-
-        movie_nfo = os.path.join(os.path.dirname(file), 'movie.nfo')
-        if self._file_warrants_refresh(movie_nfo, last_scan):
-            return True
-
-        return False
-
-    def _need_refresh_tv_show(self, file: str, last_scan: utcdt.UtcDt) -> bool:
-        # Ignore missing files
-        if not xbmcvfs.exists(file):
-            return False
-
-        tv_show_nfo = os.path.join(file, 'tvshow.nfo')
-        return self._file_warrants_refresh(tv_show_nfo, last_scan)
 
     def _close_dialog(self) -> None:
         if self._progress_bar_up:

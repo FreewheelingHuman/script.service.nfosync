@@ -268,3 +268,7 @@ msgstr ""
 msgctxt "#32063"
 msgid "Time to sync"
 msgstr ""
+
+msgctxt "#32064"
+msgid "Errors during sync - check logs"
+msgstr ""

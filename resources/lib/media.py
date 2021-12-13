@@ -25,7 +25,7 @@ def replace_extension(path: str, extension: str) -> str:
 
 def _find_modification_time(path: str) -> Optional[utcdt.UtcDt]:
     try:
-        result, _ = jsonrpc.request(
+        result = jsonrpc.request(
             'Files.GetFileDetails',
             file=path,
             properties=['lastmodified']
@@ -84,17 +84,17 @@ def _find_episode_nfo(path: str) -> (Optional[str], Optional[utcdt.UtcDt]):
     return None, None
 
 
-_TypeInfo = collections.namedtuple('TypeInfo', ['method', 'id_name', 'details', 'container', 'nfo_finder'])
-_TYPE_INFO: Final = {
+_TypeInfo = collections.namedtuple('TypeInfo', ['details_method', 'id_name', 'details', 'container', 'nfo_finder'])
+TYPE_INFO: Final = {
     'movieset': _TypeInfo(
-        method='VideoLibrary.GetMovieSetDetails',
+        details_method='VideoLibrary.GetMovieSetDetails',
         id_name='setid',
         details=['title', 'plot'],
         container='setdetails',
         nfo_finder=None
     ),
     'movie': _TypeInfo(
-        method='VideoLibrary.GetMovieDetails',
+        details_method='VideoLibrary.GetMovieDetails',
         id_name='movieid',
         details=[
             'title', 'genre', 'year', 'director', 'trailer', 'tagline', 'plot',
@@ -107,7 +107,7 @@ _TYPE_INFO: Final = {
         nfo_finder=_find_movie_nfo
     ),
     'tvshow': _TypeInfo(
-        method='VideoLibrary.GetTVShowDetails',
+        details_method='VideoLibrary.GetTVShowDetails',
         id_name='tvshowid',
         details=[
             'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
@@ -119,14 +119,14 @@ _TYPE_INFO: Final = {
         nfo_finder=_find_tvshow_nfo
     ),
     'season': _TypeInfo(
-        method='VideoLibrary.GetSeasonDetails',
+        details_method='VideoLibrary.GetSeasonDetails',
         id_name='seasonid',
         details=['title', 'season'],
         container='seasondetails',
         nfo_finder=None
     ),
     'episode': _TypeInfo(
-        method='VideoLibrary.GetEpisodeDetails',
+        details_method='VideoLibrary.GetEpisodeDetails',
         id_name='episodeid',
         details=[
             'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
@@ -161,9 +161,9 @@ class MediaInfo:
     @property
     def file(self) -> str:
         if self._file is None:
-            type_info = _TYPE_INFO[self.type]
+            type_info = TYPE_INFO[self.type]
             result = jsonrpc.request(
-                type_info.method,
+                type_info.details_method,
                 **{type_info.id_name: self.id, 'properties': ['file']}
             )
             self._file = result[type_info.container]['file']
@@ -173,7 +173,7 @@ class MediaInfo:
     @property
     def nfo(self) -> Optional[str]:
         if self._nfo == '':
-            self._nfo, _ = _TYPE_INFO[self.type].nfo_finder(self.file)
+            self._nfo, _ = TYPE_INFO[self.type].nfo_finder(self.file)
 
         return self._nfo
 
@@ -182,7 +182,7 @@ class MediaInfo:
         if self._nfo is None:
             return None
         elif self._nfo == '':
-            self._nfo, modification_time = _TYPE_INFO[self.type].nfo_finder(self.file)
+            self._nfo, modification_time = TYPE_INFO[self.type].nfo_finder(self.file)
             return modification_time
         else:
             return _find_modification_time(self._nfo)
@@ -216,7 +216,7 @@ class MediaInfo:
         if self._seasons is None:
             self._seasons = {}
             if self.type == 'tvshow':
-                type_info = _TYPE_INFO['season']
+                type_info = TYPE_INFO['season']
                 result = jsonrpc.request(
                     'VideoLibrary.GetSeasons',
                     **{'tvshowid': self.id, 'properties': type_info.details}
@@ -252,7 +252,7 @@ class MediaInfo:
             self._nfo = _tvshow_nfo(self._file)
 
     def _request_art(self, type_: str, id_: int):
-        type_info = _TYPE_INFO[type_]
+        type_info = TYPE_INFO[type_]
         result = jsonrpc.request(
             'VideoLibrary.GetAvailableArt',
             **{'item': {type_info.id_name: id_}}
@@ -260,9 +260,9 @@ class MediaInfo:
         return result['availableart']
 
     def _request_details(self, type_: str, id_: int) -> dict:
-        type_info = _TYPE_INFO[type_]
+        type_info = TYPE_INFO[type_]
         result = jsonrpc.request(
-            type_info.method,
+            type_info.details_method,
             **{type_info.id_name: id_, 'properties': type_info.details}
         )
         return result[type_info.container]
