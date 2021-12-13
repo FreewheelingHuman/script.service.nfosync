@@ -464,7 +464,7 @@ def export(
     except _ExportFailure as failure:
         addon.log(f'Export Failure: {failure}')
         if not subtask:
-            addon.notify(addon.getLocalizedString(32043))
+            addon.notify(32043)
         return False
 
     return True
