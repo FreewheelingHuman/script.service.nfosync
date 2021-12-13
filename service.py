@@ -90,6 +90,9 @@ class Service(xbmc.Monitor):
         elif method == 'VideoLibrary.OnUpdate' and settings.triggers.should_export_on_update:
             self._library_update(data)
 
+        elif method == 'VideoLibrary.OnScanFinished' and settings.triggers.should_sync_on_scan:
+            self._patient_sync(was_triggered_by_scan=True)
+
     def onSettingsChanged(self) -> None:
         addon.set_logging(verbose=settings.ui.is_logging_verbose)
         addon.set_notifications(notify=settings.ui.should_show_notifications)
@@ -129,12 +132,12 @@ class Service(xbmc.Monitor):
         if item['type'] in ['movie', 'tvshow', 'episode']:
             exporter.export(type_=item['type'], id_=item['id'])
 
-    def _patient_sync(self) -> None:
+    def _patient_sync(self, was_triggered_by_scan: bool = False) -> None:
         if self._active_sync:
             return
         if (settings.avoidance.is_enabled and player.isPlaying()
                 or self._waiter.is_active):
-            self._waiting_sync = Sync()
+            self._waiting_sync = Sync(should_skip_scan=was_triggered_by_scan)
         else:
             self._immediate_sync()
 

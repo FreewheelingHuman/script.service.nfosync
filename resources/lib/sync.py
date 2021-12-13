@@ -15,7 +15,7 @@ from resources.lib.last_known import last_known
 class Sync:
     _progress_bar: Final = xbmcgui.DialogProgressBG()
 
-    def __init__(self):
+    def __init__(self, should_skip_scan: bool = False):
         # Create a local copy of all settings in case they change mid-sync
         self._should_clean = settings.sync.should_clean
         self._should_import = settings.sync.should_import
@@ -28,7 +28,7 @@ class Sync:
             self._stages.append(self._clean)
         if self._should_import or self._should_export:
             self._stages.append(self._sync_changes)
-        if self._scan:
+        if self._scan and not should_skip_scan:
             self._stages.append(self._scan)
         self._stage_count = len(self._stages)
 
@@ -62,8 +62,8 @@ class Sync:
         return True
 
     @classmethod
-    def start(cls) -> ('Sync', bool):
-        sync = cls()
+    def start(cls, should_skip_scan: bool = False) -> ('Sync', bool):
+        sync = cls(should_skip_scan)
         return sync, sync.resume()
 
     def _clean(self) -> None:
