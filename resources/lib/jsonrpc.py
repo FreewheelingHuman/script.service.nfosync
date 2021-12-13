@@ -1,5 +1,5 @@
 import json
-from typing import Optional, Final
+from typing import Final
 
 import xbmc
 

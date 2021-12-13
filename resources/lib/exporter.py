@@ -4,7 +4,6 @@ from typing import Callable, Optional, Union
 
 import xbmcvfs
 
-import resources.lib.filetools as filetools
 import resources.lib.media as media
 import resources.lib.settings as settings
 from resources.lib.addon import addon
@@ -39,17 +38,11 @@ class _Exporter:
 
     def __init__(
             self,
-            type_: str,
-            id_: int,
+            info: media.MediaInfo,
             subtask: bool,
-            file: Optional[str] = None,
-            nfo: Optional[str] = None,
-            info: media.MediaInfo = None,
             overwrite: Optional[bool] = None
     ):
         self._is_subtask = subtask
-        self._id = id_
-        self._type = type_
         self._info = info
 
         self._is_minimal = True  # Placeholder
@@ -60,15 +53,10 @@ class _Exporter:
             self._can_overwrite = True  # Placeholder
             # self._can_overwrite = settings.export.can_overwrite
 
-        self._file = file
-        if self._file is None:
-            self._file = media.file(self._type, self._id)
-
         self._xml = None
-        self._nfo = nfo
         self._read_nfo()
         if self._xml is None and settings.export.can_create_nfo:
-            self._xml = ElementTree.Element(self._root_tags[self._type])
+            self._xml = ElementTree.Element(self._root_tags[self._info.type])
 
         self._cleared_arts = []
         self._fanart_tag = None
@@ -76,9 +64,6 @@ class _Exporter:
     def export(self) -> None:
         if self._xml is None:
             return
-
-        if self._info is None:
-            self._info = media.info(self._type, self._id)
 
         addon.log(f'Export - Subtask: {self._is_subtask}', verbose=True)
         addon.log(f'Export - Minimal: {self._is_minimal}', verbose=True)
@@ -113,41 +98,40 @@ class _Exporter:
             for art in self._info.art:
                 self._convert_art(art)
 
-            if self._type == 'tvshow':
+            if self._info.type == 'tvshow':
                 for season in self._info.seasons.values():
                     self._convert_season(season)
 
         self._write_nfo()
 
-        timestamp = filetools.modification_time(self._nfo)
+        timestamp = self._info.nfo_modification_time
         if timestamp is None:
             addon.log(
-                f'Unable to update timestamp for {self._type} with ID {self._id}'
-                f'- could not get modified timestamp for file "{self._nfo}"'
+                f'Unable to update timestamp for {self._info.type} with ID {self._info.id}'
+                f'- could not get modified timestamp for file "{self._info.nfo}"'
             )
         else:
-            last_known.set_timestamp(self._type, self._id, timestamp)
+            last_known.set_timestamp(self._info.type, self._info.id, timestamp)
 
-        last_known.set_checksum(self._type, self._id, self._info.checksum)
+        last_known.set_checksum(self._info.type, self._info.id, self._info.checksum)
 
         if not self._is_subtask:
             last_known.write_changes()
 
     def _read_nfo(self) -> None:
-        self._nfo = filetools.find_nfo(self._type, self._file)
-        if self._nfo is None:
+        if self._info.nfo is None:
             return
 
-        with xbmcvfs.File(self._nfo) as file:
+        with xbmcvfs.File(self._info.nfo) as file:
             nfo_contents = file.read()
 
         if nfo_contents == '':
-            raise _ExportFailure(f'Unable to read NFO or file empty - "{self._nfo}"')
+            raise _ExportFailure(f'Unable to read NFO or file empty - "{self._info.nfo}"')
 
         try:
             self._xml = ElementTree.fromstring(nfo_contents)
         except ElementTree.ParseError as error:
-            raise _ExportFailure(f'Unable to parse NFO file "{self._nfo}" due to error: {error}')
+            raise _ExportFailure(f'Unable to parse NFO file "{self._info.nfo}" due to error: {error}')
 
     def _write_nfo(self):
         comment = ElementTree.Comment(
@@ -157,24 +141,13 @@ class _Exporter:
 
         self._pretty_print(self._xml)
 
-        if self._nfo is None:
-            self._generate_nfo_path()
+        if self._info.nfo is None:
+            self._info.create_nfo_path()
 
-        with xbmcvfs.File(self._nfo, 'w') as file:
+        with xbmcvfs.File(self._info.nfo, 'w') as file:
             success = file.write(ElementTree.tostring(self._xml, encoding='UTF-8', xml_declaration=True))
         if not success:
-            raise _ExportFailure(f'Unable to write NFO file "{self._nfo}"')
-
-    def _generate_nfo_path(self) -> None:
-        if self._type == 'movie':
-            if settings.export.movie_nfo_naming == settings.MovieNfoOption.MOVIE:
-                self._nfo = filetools.movie_movie_nfo(self._file)
-            else:
-                self._nfo = filetools.movie_filename_nfo(self._file)
-        elif self._type == 'episode':
-            self._nfo = filetools.episode_nfo(self._file)
-        elif self._type == 'tvshow':
-            self._nfo = filetools.tvshow_nfo(self._file)
+            raise _ExportFailure(f'Unable to write NFO file "{self._info.nfo}"')
 
     def _pretty_print(self, element: ElementTree.Element, level=1) -> None:
         def indent(indent_level):
@@ -211,8 +184,8 @@ class _Exporter:
         type_ = art['arttype']
         preview = None
         if 'previewurl' in art:
-            preview = filetools.decode_image(art['previewurl'])
-        path = filetools.decode_image(art['url'])
+            preview = media.decode_image(art['previewurl'])
+        path = media.decode_image(art['url'])
 
         if self._is_ignored_image(type_, path, season):
             return
@@ -230,16 +203,16 @@ class _Exporter:
                 or type_.startswith('season.')):
             return True
 
-        extensionless_path = filetools.replace_extension(path, '')
-        if self._type == 'tvshow':
-            if extensionless_path == f'{self._file}{type_}':
+        extensionless_path = media.replace_extension(path, '')
+        if self._info.type == 'tvshow':
+            if extensionless_path == f'{self._info.file}{type_}':
                 return True
             if season:
                 season_name = 'season-specials' if season == 0 else f'season{season:02}'
-                if (extensionless_path == f'{self._file}{season_name}-{type_}'
-                        or extensionless_path == f'{self._file}season-all-{type_}'):
+                if (extensionless_path == f'{self._info.file}{season_name}-{type_}'
+                        or extensionless_path == f'{self._info.file}season-all-{type_}'):
                     return True
-        elif extensionless_path == f'{filetools.replace_extension(self._file, "")}-{type_}':
+        elif extensionless_path == f'{media.replace_extension(self._info.file, "")}-{type_}':
             return True
 
         return False
@@ -336,7 +309,7 @@ class _Exporter:
         if 'order' in details:
             self._set_tag(element, 'order', str(details['order']))
         if 'thumbnail' in details:
-            self._set_tag(element, 'thumb', filetools.decode_image(details['thumbnail']))
+            self._set_tag(element, 'thumb', media.decode_image(details['thumbnail']))
 
     def _convert_lastplayed(self, field: str, date: str) -> None:
         del field
@@ -413,7 +386,7 @@ class _Exporter:
     def _convert_trailer(self, field: str, path: str) -> None:
         del field
 
-        if filetools.replace_extension(path, '') == f'{filetools.replace_extension(self._file, "")}-trailer':
+        if media.replace_extension(path, '') == f'{media.replace_extension(self._info.file, "")}-trailer':
             return
         if path.startswith('plugin://') and not settings.export.should_export_plugin_trailers:
             return
@@ -472,22 +445,18 @@ class _Exporter:
 
 
 def export(
-        type_: str,
-        id_: int,
-        subtask: bool = False,
-        file: Optional[str] = None,
-        nfo: Optional[str] = None,
+        type_: Optional[str] = None,
+        id_: Optional[int] = None,
         info: Optional[media.MediaInfo] = None,
+        subtask: bool = False,
         overwrite: Optional[bool] = None
 ) -> bool:
     try:
+        if info is None:
+            info = media.MediaInfo(type_, id_)
         exporter = _Exporter(
-            type_=type_,
-            id_=id_,
-            subtask=subtask,
-            file=file,
-            nfo=nfo,
             info=info,
+            subtask=subtask,
             overwrite=overwrite
         )
         exporter.export()
