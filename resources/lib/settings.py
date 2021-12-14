@@ -107,7 +107,7 @@ class _Scheduled:
 
     @property
     def is_enabled(self) -> bool:
-        return addon.getSettingBool('scheduled.is_enabled')
+        return addon.getSettingBool('scheduled.is_enabled') and addon.getSetting('scheduled.days') != ''
 
     @property
     def should_run_missed_syncs(self) -> bool:
@@ -120,7 +120,7 @@ class _Scheduled:
 
     @property
     def days(self) -> list:
-        return addon.getSetting('scheduled.days').split(',')
+        return [int(day) for day in addon.getSetting('scheduled.days').split(',')]
 
 
 class _UI:

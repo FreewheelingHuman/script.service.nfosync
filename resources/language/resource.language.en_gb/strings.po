@@ -35,12 +35,10 @@ msgid "Scan for new items"
 msgstr ""
 
 msgctxt "#32006"
-msgid "Sync State"
+msgid "Unable to save state"
 msgstr ""
 
-msgctxt "#32007"
-msgid "Date and time of the last sync"
-msgstr ""
+# 32007 - removed
 
 msgctxt "#32008"
 msgid "Sync Settings"
@@ -270,5 +268,5 @@ msgid "Time to sync"
 msgstr ""
 
 msgctxt "#32064"
-msgid "Errors during sync - check logs"
+msgid "Errors during sync"
 msgstr ""

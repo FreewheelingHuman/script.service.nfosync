@@ -10,6 +10,7 @@ import resources.lib.settings as settings
 import resources.lib.utcdt as utcdt
 from resources.lib.addon import addon
 from resources.lib.last_known import last_known
+from resources.lib.timestamps import timestamps
 
 
 class Sync:
@@ -32,7 +33,7 @@ class Sync:
             self._stages.append(self._scan)
         self._stage_count = len(self._stages)
 
-        self._last_scan = last_known.sync_timestamp
+        self._last_sync = timestamps.last_sync
 
         self._should_show = settings.ui.should_show_sync
         self._progress_bar_up = False
@@ -91,7 +92,7 @@ class Sync:
         for episode in result['episodes']:
             self._sync_item(media.MediaInfo('episode', episode['episodeid'], file=episode['file']))
 
-        last_known.sync_timestamp = scan_time
+        timestamps.last_sync = scan_time
 
         self._awaiting = None
 
@@ -111,7 +112,7 @@ class Sync:
 
         last_modification_time = last_known.timestamp(info.type, info.id)
         if last_modification_time is None:
-            last_modification_time = self._last_scan
+            last_modification_time = self._last_sync
 
         if modification_time > last_modification_time:
             return True

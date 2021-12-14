@@ -175,18 +175,18 @@
 	                    <dependency type="enable" setting="scheduled.is_enabled">true</dependency>
                     </dependencies>
                 </setting>
-                <setting id="scheduled.days" type="list[string]" label="32055" help="" parent="scheduled.is_enabled">
+                <setting id="scheduled.days" type="list[integer]" label="32055" help="" parent="scheduled.is_enabled">
                     <level>1</level>
-                    <default>sunday,monday,tuesday,wednesday,thursday,friday,saturday</default>
+                    <default>6,0,1,2,3,4,5</default>
                     <constraints>
                         <options>
-                            <option label="32056">sunday</option>
-                            <option label="32057">monday</option>
-                            <option label="32058">tuesday</option>
-                            <option label="32059">wednesday</option>
-                            <option label="32060">thursday</option>
-                            <option label="32061">friday</option>
-                            <option label="32062">saturday</option>
+                            <option label="32056">6</option>
+                            <option label="32057">0</option>
+                            <option label="32058">1</option>
+                            <option label="32059">2</option>
+                            <option label="32060">3</option>
+                            <option label="32061">4</option>
+                            <option label="32062">5</option>
                         </options>
                         <allowempty>false</allowempty>
                         <delimiter>,</delimiter>
@@ -219,20 +219,6 @@
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
-                </setting>
-            </group>
-        </category>
-        <category id="state" label="32006" help="">
-            <group id="5" label="32006">
-                <setting id="state.last_sync" type="string" label="32007" help="">
-                    <level>4</level>
-                    <default/>
-                    <constraints>
-                        <allowempty>true</allowempty>
-                    </constraints>
-                    <control type="edit" format="string">
-                        <heading>32007</heading>
-                    </control>
                 </setting>
             </group>
         </category>

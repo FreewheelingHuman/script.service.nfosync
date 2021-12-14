@@ -1,3 +1,4 @@
+import datetime
 import json
 from typing import Final
 
@@ -9,6 +10,7 @@ import resources.lib.settings as settings
 from resources.lib.addon import addon, player
 from resources.lib.last_known import last_known
 from resources.lib.sync import Sync
+from resources.lib.timestamps import timestamps
 
 
 class Alarm:
@@ -59,14 +61,18 @@ class Service(xbmc.Monitor):
         )
 
         if settings.triggers.should_sync_on_start:
-            sync, done = Sync.start()
-            if not done:
-                self._active_sync = sync
+            self._immediate_sync()
+        elif settings.scheduled.is_enabled and settings.scheduled.should_run_missed_syncs:
+            self._sync_if_scheduled()
+
+        if settings.scheduled.is_enabled:
+            self._update_schedule()
 
         self._periodic_trigger.set(settings.periodic.period)
 
         while not self.abortRequested():
-            self.waitForAbort(300)
+            self.waitForAbort(60)
+            self._sync_if_scheduled()
 
     def onNotification(self, sender: str, method: str, data: str) -> None:
         if self._active_sync and method == self._active_sync.awaiting:
@@ -106,6 +112,37 @@ class Service(xbmc.Monitor):
         if (self._waiting_sync and (not settings.avoidance.is_enabled
                                     or not settings.avoidance.wait_time and not player.isPlaying())):
             self._wait_done()
+
+        if settings.scheduled.is_enabled:
+            self._update_schedule()
+
+    def _sync_if_scheduled(self) -> None:
+        if not settings.scheduled.is_enabled:
+            return
+        if datetime.datetime.now() < timestamps.next_scheduled:
+            return
+        self._patient_sync()
+        self._update_schedule()
+
+    def _update_schedule(self) -> None:
+        a_day = datetime.timedelta(days=1)
+
+        next_sync = datetime.datetime.now()
+
+        if next_sync.time() > settings.scheduled.time:
+            next_sync += a_day
+
+        while next_sync.weekday() not in settings.scheduled.days:
+            next_sync += a_day
+
+        next_sync = next_sync.replace(
+            hour=settings.scheduled.time.hour,
+            minute=settings.scheduled.time.minute,
+            second=0,
+            microsecond=0
+        )
+
+        timestamps.next_scheduled = next_sync
 
     def _continue_sync(self) -> None:
         done = self._active_sync.resume()

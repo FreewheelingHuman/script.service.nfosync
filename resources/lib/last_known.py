@@ -134,26 +134,12 @@ class _Tracker:
 
 
 class _LastKnown:
-    _sync_timestamp: Final = 'state.last_sync'
-
     def __init__(self):
         self._trackers = {
             'movie': _Tracker('movies'),
             'episode': _Tracker('episodes'),
             'tvshow': _Tracker('tvshows')
         }
-
-        if addon.getSettingString(self._sync_timestamp) == '':
-            self.sync_timestamp = utcdt.now()
-
-    @property
-    def sync_timestamp(self) -> utcdt.UtcDt:
-        iso_string = addon.getSettingString(self._sync_timestamp)
-        return utcdt.fromisoformat(iso_string)
-
-    @sync_timestamp.setter
-    def sync_timestamp(self, timestamp: utcdt.UtcDt) -> None:
-        addon.setSettingString(self._sync_timestamp, timestamp.isoformat(timespec='seconds'))
 
     def checksum(self, type_: str, id_: int) -> Optional[int]:
         return self._trackers[type_].get(id_, 'checksum')
