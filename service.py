@@ -6,6 +6,7 @@ import xbmc
 
 import resources.lib.exporter as exporter
 import resources.lib.jsonrpc as jsonrpc
+import resources.lib.media as media
 import resources.lib.settings as settings
 from resources.lib.addon import addon, player
 from resources.lib.last_known import last_known
@@ -167,7 +168,7 @@ class Service(xbmc.Monitor):
             return
 
         if item['type'] in ['movie', 'tvshow', 'episode']:
-            exporter.export(type_=item['type'], id_=item['id'])
+            exporter.export(media.MediaInfo(type_=item['type'], id_=item['id']))
 
     def _patient_sync(self, was_triggered_by_scan: bool = False) -> None:
         if self._active_sync:

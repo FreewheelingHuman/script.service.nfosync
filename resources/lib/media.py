@@ -84,17 +84,31 @@ def _find_episode_nfo(path: str) -> (Optional[str], Optional[utcdt.UtcDt]):
     return None, None
 
 
-_TypeInfo = collections.namedtuple('TypeInfo', ['details_method', 'id_name', 'details', 'container', 'nfo_finder'])
+_TypeInfo = collections.namedtuple('TypeInfo', [
+    'details_method',
+    'list_method',
+    'refresh_method',
+    'id_name',
+    'details',
+    'details_container',
+    'list_container',
+    'nfo_finder'
+])
 TYPE_INFO: Final = {
     'movieset': _TypeInfo(
         details_method='VideoLibrary.GetMovieSetDetails',
+        list_method='VideoLibrary.GetMovieSets',
+        refresh_method=None,
         id_name='setid',
         details=['title', 'plot'],
-        container='setdetails',
+        details_container='setdetails',
+        list_container=None,
         nfo_finder=None
     ),
     'movie': _TypeInfo(
         details_method='VideoLibrary.GetMovieDetails',
+        list_method='VideoLibrary.GetMovies',
+        refresh_method='VideoLibrary.RefreshMovie',
         id_name='movieid',
         details=[
             'title', 'genre', 'year', 'director', 'trailer', 'tagline', 'plot',
@@ -103,11 +117,14 @@ TYPE_INFO: Final = {
             'streamdetails', 'top250', 'sorttitle', 'dateadded', 'tag',
             'userrating', 'ratings', 'premiered', 'uniqueid'
         ],
-        container='moviedetails',
+        details_container='moviedetails',
+        list_container='movies',
         nfo_finder=_find_movie_nfo
     ),
     'tvshow': _TypeInfo(
         details_method='VideoLibrary.GetTVShowDetails',
+        list_method='VideoLibrary.GetTVShows',
+        refresh_method='VideoLibrary.RefreshTVShow',
         id_name='tvshowid',
         details=[
             'title', 'genre', 'year', 'plot', 'studio', 'mpaa', 'cast', 'playcount',
@@ -115,18 +132,24 @@ TYPE_INFO: Final = {
             'sorttitle', 'season', 'dateadded', 'tag', 'userrating',
             'ratings', 'runtime', 'uniqueid'
         ],
-        container='tvshowdetails',
+        details_container='tvshowdetails',
+        list_container='tvshows',
         nfo_finder=_find_tvshow_nfo
     ),
     'season': _TypeInfo(
         details_method='VideoLibrary.GetSeasonDetails',
+        list_method='VideoLibrary.GetSeasons',
+        refresh_method=None,
         id_name='seasonid',
         details=['title', 'season'],
-        container='seasondetails',
+        details_container='seasondetails',
+        list_container='seasons',
         nfo_finder=None
     ),
     'episode': _TypeInfo(
         details_method='VideoLibrary.GetEpisodeDetails',
+        list_method='VideoLibrary.GetEpisodes',
+        refresh_method='VideoLibrary.RefreshEpisode',
         id_name='episodeid',
         details=[
             'title', 'plot', 'writer', 'firstaired', 'playcount', 'runtime',
@@ -134,10 +157,20 @@ TYPE_INFO: Final = {
             'streamdetails', 'lastplayed', 'dateadded', 'uniqueid',
             'specialsortseason', 'specialsortepisode', 'userrating', 'ratings'
         ],
-        container='episodedetails',
+        details_container='episodedetails',
+        list_container='episodes',
         nfo_finder=_find_episode_nfo
     )
 }
+
+
+def get_all(type_: str) -> list:
+    type_info = TYPE_INFO[type_]
+    result = jsonrpc.request(
+        type_info.list_method,
+        properties=['file']
+    )
+    return result[type_info.list_container]
 
 
 SeasonInfo = collections.namedtuple('SeasonInfo', ['details', 'art'])
@@ -166,7 +199,7 @@ class MediaInfo:
                 type_info.details_method,
                 **{type_info.id_name: self.id, 'properties': ['file']}
             )
-            self._file = result[type_info.container]['file']
+            self._file = result[type_info.details_container]['file']
 
         return self._file
 
@@ -218,10 +251,10 @@ class MediaInfo:
             if self.type == 'tvshow':
                 type_info = TYPE_INFO['season']
                 result = jsonrpc.request(
-                    'VideoLibrary.GetSeasons',
+                    type_info.list_method,
                     **{'tvshowid': self.id, 'properties': type_info.details}
                 )
-                seasons = result['seasons']
+                seasons = result[type_info.list_container]
                 for season in seasons:
                     art = self._request_art('season', self.id)
                     self._seasons[season['season']] = SeasonInfo(details=season, art=art)
@@ -265,4 +298,4 @@ class MediaInfo:
             type_info.details_method,
             **{type_info.id_name: id_, 'properties': type_info.details}
         )
-        return result[type_info.container]
+        return result[type_info.details_container]

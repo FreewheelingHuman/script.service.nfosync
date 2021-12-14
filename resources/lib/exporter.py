@@ -2,6 +2,7 @@ import datetime
 import xml.etree.ElementTree as ElementTree
 from typing import Callable, Optional, Union
 
+import xbmcgui
 import xbmcvfs
 
 import resources.lib.media as media
@@ -64,10 +65,6 @@ class _Exporter:
     def export(self) -> None:
         if self._xml is None:
             return
-
-        addon.log(f'Export - Subtask: {self._is_subtask}', verbose=True)
-        addon.log(f'Export - Minimal: {self._is_minimal}', verbose=True)
-        addon.log(f'Export - Overwrite: {self._can_overwrite}', verbose=True)
 
         handlers = {
             'art': self._convert_art,
@@ -445,15 +442,11 @@ class _Exporter:
 
 
 def export(
-        type_: Optional[str] = None,
-        id_: Optional[int] = None,
         info: Optional[media.MediaInfo] = None,
         subtask: bool = False,
         overwrite: Optional[bool] = None
 ) -> bool:
     try:
-        if info is None:
-            info = media.MediaInfo(type_, id_)
         exporter = _Exporter(
             info=info,
             subtask=subtask,
@@ -468,3 +461,49 @@ def export(
         return False
 
     return True
+
+
+class _DialogCancelled(Exception):
+    pass
+
+
+def export_all() -> None:
+    dialog = xbmcgui.DialogProgress()
+    dialog.create(addon.getLocalizedString(32069))
+
+    failures = False
+
+    def export_type(type_: str, message: int, fraction: int, base_progress: int) -> bool:
+        type_info = media.TYPE_INFO[type_]
+
+        full_success = True
+        items = media.get_all(type_)
+        count = 0
+        total = len(items)
+        for item in items:
+            success = export(media.MediaInfo(type_, item[type_info.id_name], file=item['file']), subtask=True)
+            if not success:
+                full_success = False
+            if dialog.iscanceled():
+                raise _DialogCancelled
+            count += 1
+            progress = int(count / total * fraction) + base_progress
+            dialog.update(progress, addon.getLocalizedString(message))
+
+        return full_success
+
+    try:
+        if not export_type(type_='movie', message=32070, fraction=33, base_progress=0):
+            failures = True
+        if not export_type(type_='tvshow', message=32071, fraction=33, base_progress=33):
+            failures = True
+        if not export_type(type_='episode', message=32072, fraction=34, base_progress=66):
+            failures = True
+
+    except _DialogCancelled:
+        pass
+
+    finally:
+        dialog.close()
+        if failures:
+            addon.notify(32073)

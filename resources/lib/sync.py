@@ -4,6 +4,7 @@ from typing import Final
 import xbmcgui
 
 import resources.lib.exporter as exporter
+import resources.lib.importer as importer
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.media as media
 import resources.lib.settings as settings
@@ -64,32 +65,26 @@ class Sync:
 
     @classmethod
     def start(cls, should_skip_scan: bool = False) -> ('Sync', bool):
-        sync = cls(should_skip_scan)
+        sync = cls(should_skip_scan=should_skip_scan)
         return sync, sync.resume()
 
     def _clean(self) -> None:
-        addon.log("Starting clean", verbose=True)
         self._update_dialog(32003)
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
         self._awaiting = 'VideoLibrary.OnCleanFinished'
 
     def _sync_changes(self) -> None:
-        addon.log("Starting change sync", verbose=True)
-
         self._update_dialog(32010)
 
         scan_time = utcdt.now()
 
-        result = jsonrpc.request('VideoLibrary.GetMovies', properties=['file'])
-        for movie in result['movies']:
+        for movie in media.get_all('movie'):
             self._sync_item(media.MediaInfo('movie', movie['movieid'], file=movie['file']))
 
-        result = jsonrpc.request('VideoLibrary.GetTVShows', properties=['file'])
-        for tv_show in result['tvshows']:
-            self._sync_item(media.MediaInfo('tvshow', tv_show['tvshowid'], file=tv_show['file']))
+        for tvshow in media.get_all('tvshow'):
+            self._sync_item(media.MediaInfo('tvshow', tvshow['tvshowid'], file=tvshow['file']))
 
-        result = jsonrpc.request('VideoLibrary.GetEpisodes', properties=['file'])
-        for episode in result['episodes']:
+        for episode in media.get_all('episode'):
             self._sync_item(media.MediaInfo('episode', episode['episodeid'], file=episode['file']))
 
         timestamps.last_sync = scan_time
@@ -103,7 +98,7 @@ class Sync:
             self._export_if_needed(info, should_import)
 
         if should_import:
-            self._import(info)
+            importer.import_(info)
 
     def _item_requires_import(self, info: media.MediaInfo) -> bool:
         modification_time = info.nfo_modification_time
@@ -119,13 +114,6 @@ class Sync:
 
         return False
 
-    def _import(self, info: media.MediaInfo):
-        addon.log(f'Sync - "{info.details["title"]}" has been flagged for import.', verbose=True)
-        jsonrpc.request(
-            media.TYPE_INFO[info.type].refresh_method,
-            **{media.TYPE_INFO[info.type].id_name: info.id}
-        )
-
     def _export_if_needed(self, info: media.MediaInfo, should_import: bool) -> None:
         last_checksum = last_known.checksum(info.type, info.id)
 
@@ -134,13 +122,12 @@ class Sync:
         addon.log(f'Sync - Exporting "{info.details["title"]}" due to checksum difference.')
 
         overwrite = not should_import if self._should_import_first else None
-        success = exporter.export(info=info, overwrite=overwrite)
+        success = exporter.export(subtask=True, info=info, overwrite=overwrite)
 
         if not success:
             self._failures = True
 
     def _scan(self) -> None:
-        addon.log("Starting scan", verbose=True)
         self._update_dialog(32012)
         jsonrpc.request('VideoLibrary.Scan', showdialogs=False)
         self._awaiting = 'VideoLibrary.OnScanFinished'

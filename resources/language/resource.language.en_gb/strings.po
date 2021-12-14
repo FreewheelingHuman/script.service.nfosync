@@ -35,10 +35,12 @@ msgid "Scan for new items"
 msgstr ""
 
 msgctxt "#32006"
-msgid "Unable to save state"
+msgid "Unable to save state - see log"
 msgstr ""
 
-# 32007 - removed
+msgctxt "#32007"
+msgid "Errors during import - see log"
+msgstr ""
 
 msgctxt "#32008"
 msgid "Sync Settings"
@@ -268,5 +270,41 @@ msgid "Time to sync"
 msgstr ""
 
 msgctxt "#32064"
-msgid "Errors during sync"
+msgid "Errors during sync - see log"
+msgstr ""
+
+msgctxt "#32065"
+msgid "Importing"
+msgstr ""
+
+msgctxt "#32066"
+msgid "Importing Movies"
+msgstr ""
+
+msgctxt "#32067"
+msgid "Importing TV Shows"
+msgstr ""
+
+msgctxt "#32068"
+msgid "Importing Episodes"
+msgstr ""
+
+msgctxt "#32069"
+msgid "Exporting"
+msgstr ""
+
+msgctxt "#32070"
+msgid "Exporting Movies"
+msgstr ""
+
+msgctxt "#32071"
+msgid "Exporting TV Shows"
+msgstr ""
+
+msgctxt "#32072"
+msgid "Exporting Episodes"
+msgstr ""
+
+msgctxt "#32073"
+msgid "Errors during export - see log"
 msgstr ""
