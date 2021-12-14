@@ -68,6 +68,13 @@ class Sync:
         sync = cls(should_skip_scan=should_skip_scan)
         return sync, sync.resume()
 
+    @classmethod
+    def sync_one(cls, info: media.MediaInfo) -> None:
+        sync = cls()
+        sync._sync_item(info)
+        if sync._failures:
+            addon.notify(32064)
+
     def _clean(self) -> None:
         self._update_dialog(32003)
         jsonrpc.request('VideoLibrary.Clean', showdialogs=False)
