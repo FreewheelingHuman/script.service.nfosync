@@ -44,3 +44,17 @@ def request(method: str, **params) -> dict:
         raise RequestError(f'JSONRPC request failed.\nRequest: {contents}\nResponse: {response}')
 
     return response['result']
+
+
+def notify(message: str, data: dict = None) -> None:
+    notification = {
+        'sender': addon.id,
+        'message': message
+    }
+    if data:
+        notification['data'] = data
+
+    request(
+        'JSONRPC.NotifyAll',
+        **notification
+    )
