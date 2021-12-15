@@ -504,6 +504,7 @@ def export_all() -> None:
         pass
 
     finally:
+        last_known.write_changes()
         dialog.close()
         if failures:
             addon.notify(32073)
