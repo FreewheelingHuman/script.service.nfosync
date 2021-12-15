@@ -9,6 +9,11 @@ def sync(arguments: list):
     jsonrpc.notify(message=jsonrpc.INTERNAL_METHODS.immediate_sync.send)
 
 
+def patient_sync(arguments: list):
+    del arguments
+    jsonrpc.notify(message=jsonrpc.INTERNAL_METHODS.patient_sync_sync.send)
+
+
 def sync_one(arguments: list):
     if len(arguments) < 2:
         addon.log('Script - sync_one is missing arguments. Requires: media type, library id')
@@ -45,6 +50,7 @@ def import_all(arguments: list):
 
 functions = {
     'sync': sync,
+    'patient_sync': patient_sync,
     'sync_one': sync_one,
     'export': export,
     'export_all': export_all,
