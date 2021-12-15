@@ -5,6 +5,7 @@ from typing import Final
 import xbmc
 
 import resources.lib.exporter as exporter
+import resources.lib.importer as importer
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.media as media
 import resources.lib.settings as settings
@@ -50,6 +51,7 @@ class Service(xbmc.Monitor):
 
         self._active_sync = None
         self._waiting_sync = None
+        self._waiting_actions = {}
 
         self._periodic_trigger = Alarm(
             name='periodic.trigger',
@@ -62,7 +64,7 @@ class Service(xbmc.Monitor):
         )
 
         if settings.triggers.should_sync_on_start:
-            self._immediate_sync()
+            self._sync()
         elif settings.scheduled.is_enabled and settings.scheduled.should_run_missed_syncs:
             self._sync_if_scheduled()
 
@@ -80,10 +82,26 @@ class Service(xbmc.Monitor):
             self._continue_sync()
 
         elif method == jsonrpc.INTERNAL_METHODS.immediate_sync.recv:
-            self._immediate_sync()
+            self._sync()
 
         elif method == jsonrpc.INTERNAL_METHODS.patient_sync.recv:
             self._patient_sync()
+
+        elif method == jsonrpc.INTERNAL_METHODS.sync_one.recv:
+            self._waiting_actions['sync_one'] = data
+            self._run_waiting_actions()
+
+        elif method == jsonrpc.INTERNAL_METHODS.export.recv:
+            self._waiting_actions['export'] = data
+            self._run_waiting_actions()
+
+        elif method == jsonrpc.INTERNAL_METHODS.export_all.recv:
+            self._waiting_actions['export_all'] = data
+            self._run_waiting_actions()
+
+        elif method == jsonrpc.INTERNAL_METHODS.import_all.recv:
+            self._waiting_actions['import_all'] = data
+            self._run_waiting_actions()
 
         elif method == jsonrpc.INTERNAL_METHODS.wait_done.recv:
             self._wait_done()
@@ -145,16 +163,17 @@ class Service(xbmc.Monitor):
 
         timestamps.next_scheduled = next_sync
 
+    def _sync(self) -> None:
+        if self._active_sync:
+            return
+        self._active_sync = Sync()
+        self._continue_sync()
+
     def _continue_sync(self) -> None:
         done = self._active_sync.resume()
         if done:
             self._active_sync = None
-
-    def _immediate_sync(self) -> None:
-        if not self._active_sync:
-            sync, done = Sync.start()
-            if not done:
-                self._active_sync = sync
+            self._run_waiting_actions()
 
     def _library_update(self, data: str) -> None:
         data = json.loads(data)
@@ -177,7 +196,24 @@ class Service(xbmc.Monitor):
                 or self._waiter.is_active):
             self._waiting_sync = Sync(should_skip_scan=was_triggered_by_scan)
         else:
-            self._immediate_sync()
+            self._sync()
+
+    def _run_waiting_actions(self):
+        if self._active_sync:
+            return
+
+        functions = {
+            'sync_one': lambda a: Sync.sync_one(media.MediaInfo(type_=a['type'], id_=a['id'])),
+            'export': lambda a: exporter.export(media.MediaInfo(type_=a['type'], id_=a['id'])),
+            'export_all': lambda a: exporter.export_all(),
+            'import_all': lambda a: importer.import_all()
+        }
+
+        for action in ['sync_one', 'export', 'export_all', 'import_all']:
+            data = self._waiting_actions.pop(action, None)
+            if data is None:
+                continue
+            functions[action](json.loads(data))
 
     def _play_stop(self):
         if settings.avoidance.wait_time:
@@ -187,7 +223,7 @@ class Service(xbmc.Monitor):
 
     def _wait_done(self) -> None:
         self._waiter.cancel()
-        self._immediate_sync()
+        self._sync()
         self._waiting_sync = None
 
 
