@@ -101,7 +101,7 @@ class _Exporter:
 
         self._write_nfo()
 
-        timestamp = self._info.nfo_modification_time
+        timestamp = self._info.nfo_modification_time()
         if timestamp is None:
             addon.log(
                 f'Unable to update timestamp for {self._info.type} with ID {self._info.id}'

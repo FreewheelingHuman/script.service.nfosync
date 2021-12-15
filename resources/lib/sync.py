@@ -108,7 +108,7 @@ class Sync:
             importer.import_(info)
 
     def _item_requires_import(self, info: media.MediaInfo) -> bool:
-        modification_time = info.nfo_modification_time
+        modification_time = info.nfo_modification_time()
         if modification_time is None:
             return False
 

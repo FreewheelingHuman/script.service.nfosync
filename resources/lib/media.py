@@ -211,16 +211,6 @@ class MediaInfo:
         return self._nfo
 
     @property
-    def nfo_modification_time(self) -> Optional[utcdt.UtcDt]:
-        if self._nfo is None:
-            return None
-        elif self._nfo == '':
-            self._nfo, modification_time = TYPE_INFO[self.type].nfo_finder(self.file)
-            return modification_time
-        else:
-            return _find_modification_time(self._nfo)
-
-    @property
     def details(self) -> dict:
         if self._details is None:
             self._details = self._request_details(self.type, self.id)
@@ -270,6 +260,15 @@ class MediaInfo:
             self._checksum = zlib.crc32(str(self.seasons).encode('utf-8'), checksum)
 
         return self._checksum
+
+    def nfo_modification_time(self) -> Optional[utcdt.UtcDt]:
+        if self._nfo is None:
+            return None
+        elif self._nfo == '':
+            self._nfo, modification_time = TYPE_INFO[self.type].nfo_finder(self.file)
+            return modification_time
+        else:
+            return _find_modification_time(self._nfo)
 
     def create_nfo_path(self):
         if self.type == 'movie':
