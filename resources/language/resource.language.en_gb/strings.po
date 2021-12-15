@@ -308,3 +308,7 @@ msgstr ""
 msgctxt "#32073"
 msgid "Errors during export - see log"
 msgstr ""
+
+msgctxt "#32074"
+msgid "Unable to run action - see log"
+msgstr ""
