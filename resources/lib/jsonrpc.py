@@ -9,7 +9,7 @@ from resources.lib.addon import addon
 class _InternalMethods:
     class _Method:
         def __init__(self, method: str):
-            self._method = method
+            self._method = f'{addon.json_name}.{method}'
 
         @property
         def send(self) -> str:
@@ -19,9 +19,13 @@ class _InternalMethods:
         def recv(self) -> str:
             return 'Other.' + self._method
 
-    immediate_sync: Final = _Method(f'{addon.json_name}.Immediate_Sync')
-    patient_sync: Final = _Method(f'{addon.json_name}.Patient_Sync')
-    wait_done: Final = _Method(f'{addon.json_name}.Wait_Done')
+    immediate_sync: Final = _Method('ImmediateSync')
+    patient_sync: Final = _Method('PatientSync')
+    sync_one: Final = _Method('SyncOne')
+    export: Final = _Method('Export')
+    export_all: Final = _Method('ExportAll')
+    import_all: Final = _Method('ImportAll')
+    wait_done: Final = _Method('WaitDone')
 
 
 INTERNAL_METHODS: Final = _InternalMethods()
