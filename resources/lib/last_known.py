@@ -98,6 +98,7 @@ class _Tracker:
             bytes_.extend(checksum.to_bytes(self._checksum_bytes, byteorder='little'))
             bytes_.extend(timestamp.to_bytes(self._timestamp_bytes, byteorder='little'))
 
+        xbmcvfs.mkdir(addon.profile)
         with xbmcvfs.File(self._file, 'w') as file:
             success = file.write(bytes_)
 

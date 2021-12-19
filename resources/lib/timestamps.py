@@ -57,6 +57,7 @@ class _Timestamps:
             'next_scheduled': self._next_scheduled.isoformat(timespec='seconds')
         }
 
+        xbmcvfs.mkdir(addon.profile)
         with xbmcvfs.File(self._file, 'w') as file:
             success = file.write(json.dumps(contents))
 
