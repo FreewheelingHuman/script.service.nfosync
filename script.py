@@ -4,7 +4,7 @@ import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import addon
 
 
-def sync(arguments: list):
+def sync_all(arguments: list):
     del arguments
     jsonrpc.notify(message=jsonrpc.INTERNAL_METHODS.immediate_sync.send)
 
@@ -49,11 +49,10 @@ def export_all(arguments: list):
 
 
 functions = {
-    'sync': sync,
-    'patient_sync': patient_sync,
     'sync_one': sync_one,
+    'sync_all': sync_all,
     'import_all': import_all,
-    'export': export,
+    'export_one': export,
     'export_all': export_all
 }
 
