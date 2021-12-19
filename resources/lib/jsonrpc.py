@@ -19,12 +19,11 @@ class _InternalMethods:
         def recv(self) -> str:
             return 'Other.' + self._method
 
-    immediate_sync: Final = _Method('ImmediateSync')
-    patient_sync: Final = _Method('PatientSync')
+    sync_all: Final = _Method('SyncAll')
     sync_one: Final = _Method('SyncOne')
-    export: Final = _Method('Export')
-    export_all: Final = _Method('ExportAll')
     import_all: Final = _Method('ImportAll')
+    export_one: Final = _Method('Export')
+    export_all: Final = _Method('ExportAll')
     wait_done: Final = _Method('WaitDone')
 
 
