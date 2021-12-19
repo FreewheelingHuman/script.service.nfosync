@@ -59,10 +59,9 @@ functions = {
 
 addon.log(f'Script - Running with parameters: {sys.argv}')
 
-command = 'sync'
 try:
     command = sys.argv[1]
 except IndexError:
-    pass
+    command = 'sync'
 
 functions[command](sys.argv[2:])
