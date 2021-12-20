@@ -9,6 +9,7 @@ import resources.lib.actions as actions
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.media as media
 import resources.lib.settings as settings
+import resources.lib.utcdt as utcdt
 from resources.lib.addon import addon, player
 from resources.lib.alarm import Alarm
 from resources.lib.last_known import last_known
@@ -142,8 +143,9 @@ class Service(xbmc.Monitor):
 
         # Always ignore added items if they aren't part a transaction because
         # refreshing an item will trigger a non-transactional update event.
-        # We still want to update the checksum, however.
+        # We still want to update the timestamp and checksum, however.
         if data.get('added') and (settings.triggers.ignores_add_updates or not data.get('transaction')):
+            last_known.set_timestamp(item['type'], item['id'], utcdt.now())
             last_known.set_checksum(item['type'], item['id'])
             return
 
