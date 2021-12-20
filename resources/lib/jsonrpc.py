@@ -24,6 +24,7 @@ class _InternalMethods:
     import_all: Final = _Method('ImportAll')
     export_one: Final = _Method('Export')
     export_all: Final = _Method('ExportAll')
+    alarm: Final = _Method('Alarm')
     wait_done: Final = _Method('WaitDone')
 
 

@@ -10,35 +10,9 @@ import resources.lib.jsonrpc as jsonrpc
 import resources.lib.media as media
 import resources.lib.settings as settings
 from resources.lib.addon import addon, player
+from resources.lib.alarm import Alarm
 from resources.lib.last_known import last_known
 from resources.lib.timestamps import timestamps
-
-
-class Alarm:
-    def __init__(self, name: str, command: str, loop: bool = False):
-        self._name: Final = f'{addon.id}.{name}'
-        self._command: Final = command
-        self._loop: Final = ',loop' if loop else ''
-
-        self._minutes = 0
-
-    @property
-    def is_active(self) -> bool:
-        return bool(self._minutes)
-
-    @property
-    def minutes(self) -> int:
-        return self._minutes
-
-    def set(self, minutes):
-        self.cancel()
-        if minutes > 0:
-            self._minutes = minutes
-            xbmc.executebuiltin(f'AlarmClock({self._name},{self._command},{self._minutes},silent{self._loop})')
-
-    def cancel(self):
-        xbmc.executebuiltin(f'CancelAlarm({self._name},silent)')
-        self._minutes = 0
 
 
 class Service(xbmc.Monitor):
@@ -57,12 +31,13 @@ class Service(xbmc.Monitor):
 
         self._periodic_trigger = Alarm(
             name='periodic.trigger',
-            command=f'NotifyAll({addon.id},{jsonrpc.INTERNAL_METHODS.sync_all.send},{{"patient":true}})',
+            message=jsonrpc.INTERNAL_METHODS.sync_all.send,
+            data={'patient': True},
             loop=True
         )
         self._waiter = Alarm(
             name='avoidance.wait',
-            command=f'NotifyAll({addon.id},{jsonrpc.INTERNAL_METHODS.wait_done.send})'
+            message=jsonrpc.INTERNAL_METHODS.wait_done
         )
 
         if settings.triggers.should_sync_on_start:
@@ -105,7 +80,7 @@ class Service(xbmc.Monitor):
             self._queue_action(actions.ExportAll(), patient=data['patient'])
 
         elif method == jsonrpc.INTERNAL_METHODS.wait_done.recv:
-            self._wait_done()
+            self._run_actions()
 
         elif method == 'Player.OnPlay':
             self._waiter.cancel()
@@ -180,11 +155,7 @@ class Service(xbmc.Monitor):
         if settings.avoidance.wait_time:
             self._waiter.set(settings.avoidance.wait_time)
         else:
-            self._wait_done()
-
-    def _wait_done(self) -> None:
-        self._waiter.cancel()
-        self._run_actions()
+            self._run_actions()
 
     @property
     def _queued_types(self) -> set:
