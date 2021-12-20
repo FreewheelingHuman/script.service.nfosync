@@ -42,14 +42,13 @@ class Alarm(xbmc.Monitor):
         if method != jsonrpc.INTERNAL_METHODS.alarm.recv:
             return
         data = json.loads(data)
-        addon.log(f'Alarm Notification: {data}')
         if data['name'] != self._name:
             return
+
+        if not self._loop:
+            self._minutes = 0
 
         if self._data:
             jsonrpc.notify(message=self._message, data=self._data)
         else:
             jsonrpc.notify(message=self._message)
-
-        if not self._loop:
-            self._minutes = 0
