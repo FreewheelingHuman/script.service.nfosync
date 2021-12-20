@@ -1,10 +1,8 @@
-from collections import deque
+import collections
 from typing import Final
 
 import xbmcgui
 
-import resources.lib.exporter as exporter
-import resources.lib.importer as importer
 import resources.lib.jsonrpc as jsonrpc
 import resources.lib.media as media
 import resources.lib.settings as settings
@@ -14,10 +12,67 @@ from resources.lib.last_known import last_known
 from resources.lib.timestamps import timestamps
 
 
-class Sync:
+from . import *
+
+
+def _item_requires_import(info: media.MediaInfo) -> bool:
+    modification_time = info.nfo_modification_time()
+    if modification_time is None:
+        return False
+
+    last_modification_time = last_known.timestamp(info.type, info.id)
+    if last_modification_time is None:
+        last_modification_time = timestamps.last_sync
+
+    if modification_time > last_modification_time:
+        return True
+
+    return False
+
+
+def _item_requires_export(info: media.MediaInfo) -> bool:
+    last_checksum = last_known.checksum(info.type, info.id)
+
+    if last_checksum == info.checksum:
+        return False
+
+    return True
+
+
+def _sync_item(info: media.MediaInfo) -> None:
+    should_import = _item_requires_import(info)
+    should_export = _item_requires_export(info)
+
+    if should_export:
+        overwrite = not should_import if settings.sync.should_import_first else None
+        ExportOne(info, overwrite=overwrite, subtask=True).run()
+
+    if should_import:
+        ImportOne(info).run()
+
+
+class SyncOne(Action):
+
+    _type = 'Sync One'
+
+    def __init__(self, info: media.MediaInfo):
+        super().__init__()
+        self._info = info
+
+    def run(self) -> None:
+        _sync_item(self._info)
+        # if sync._failures:
+        #    addon.notify(32064)
+
+
+class SyncAll(Action):
+
+    _type = 'Sync All'
     _progress_bar: Final = xbmcgui.DialogProgressBG()
 
     def __init__(self, should_skip_scan: bool = False):
+        super().__init__()
+
         # Create a local copy of all settings in case they change mid-sync
         self._should_clean = settings.sync.should_clean
         self._should_import = settings.sync.should_import
@@ -25,7 +80,7 @@ class Sync:
         self._should_export = settings.sync.should_export
         self._should_scan = settings.sync.should_scan
 
-        self._stages = deque()
+        self._stages = collections.deque()
         if self._should_clean:
             self._stages.append(self._clean)
         if self._should_import or self._should_export:
@@ -34,26 +89,17 @@ class Sync:
             self._stages.append(self._scan)
         self._stage_count = len(self._stages)
 
-        self._last_sync = timestamps.last_sync
-
         self._should_show = settings.ui.should_show_sync
         self._progress_bar_up = False
 
-        self._awaiting = None
-
         self._failures = False
 
-    @property
-    def awaiting(self) -> str:
-        return self._awaiting
-
-    # Returns true when it is done
-    def resume(self) -> bool:
+    def run(self) -> None:
         while self._stages:
             self._stages[0]()
             self._stages.popleft()
             if self._awaiting:
-                return False
+                return
 
         last_known.write_changes()
         self._close_dialog()
@@ -61,19 +107,7 @@ class Sync:
         if self._failures:
             addon.notify(32064)
 
-        return True
-
-    @classmethod
-    def start(cls, should_skip_scan: bool = False) -> ('Sync', bool):
-        sync = cls(should_skip_scan=should_skip_scan)
-        return sync, sync.resume()
-
-    @classmethod
-    def sync_one(cls, info: media.MediaInfo) -> None:
-        sync = cls()
-        sync._sync_item(info)
-        if sync._failures:
-            addon.notify(32064)
+        return
 
     def _clean(self) -> None:
         self._update_dialog(32003)
@@ -86,53 +120,17 @@ class Sync:
         scan_time = utcdt.now()
 
         for movie in media.get_all('movie'):
-            self._sync_item(media.MediaInfo('movie', movie['movieid'], file=movie['file']))
+            _sync_item(media.MediaInfo('movie', movie['movieid'], file=movie['file']))
 
         for tvshow in media.get_all('tvshow'):
-            self._sync_item(media.MediaInfo('tvshow', tvshow['tvshowid'], file=tvshow['file']))
+            _sync_item(media.MediaInfo('tvshow', tvshow['tvshowid'], file=tvshow['file']))
 
         for episode in media.get_all('episode'):
-            self._sync_item(media.MediaInfo('episode', episode['episodeid'], file=episode['file']))
+            _sync_item(media.MediaInfo('episode', episode['episodeid'], file=episode['file']))
 
         timestamps.last_sync = scan_time
 
         self._awaiting = None
-
-    def _sync_item(self, info: media.MediaInfo) -> None:
-        should_import = self._item_requires_import(info) if self._should_import else False
-
-        if self._should_export:
-            self._export_if_needed(info, should_import)
-
-        if should_import:
-            importer.import_(info)
-
-    def _item_requires_import(self, info: media.MediaInfo) -> bool:
-        modification_time = info.nfo_modification_time()
-        if modification_time is None:
-            return False
-
-        last_modification_time = last_known.timestamp(info.type, info.id)
-        if last_modification_time is None:
-            last_modification_time = self._last_sync
-
-        if modification_time > last_modification_time:
-            return True
-
-        return False
-
-    def _export_if_needed(self, info: media.MediaInfo, should_import: bool) -> None:
-        last_checksum = last_known.checksum(info.type, info.id)
-
-        if last_checksum == info.checksum:
-            return
-        addon.log(f'Sync - Exporting "{info.details["title"]}" due to checksum difference.')
-
-        overwrite = not should_import if self._should_import_first else None
-        success = exporter.export(subtask=True, info=info, overwrite=overwrite)
-
-        if not success:
-            self._failures = True
 
     def _scan(self) -> None:
         self._update_dialog(32012)

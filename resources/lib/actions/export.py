@@ -10,12 +10,21 @@ import resources.lib.settings as settings
 from resources.lib.addon import addon
 from resources.lib.last_known import last_known
 
+from . import *
+
+
+class _DialogCancelled(Exception):
+    pass
+
 
 class _ExportFailure(Exception):
     pass
 
 
-class _Exporter:
+class ExportOne(Action):
+
+    _type = 'Export One'
+
     # Ignoring label. It always gets returned and is a duplicate to title
     # so far as I can see. However, not sure if it is always the same as
     # title and isn't directly exportable, so rather than mapping label
@@ -40,13 +49,15 @@ class _Exporter:
     def __init__(
             self,
             info: media.MediaInfo,
-            subtask: bool,
-            overwrite: Optional[bool] = None
+            overwrite: Optional[bool] = None,
+            subtask: bool = False
     ):
+        super().__init__()
+
         self._is_subtask = subtask
         self._info = info
 
-        self._is_minimal = True  # Placeholder
+        self._is_minimal = False  # Placeholder
         # self._is_minimal = settings.export.is_minimal
 
         self._can_overwrite = overwrite
@@ -54,16 +65,25 @@ class _Exporter:
             self._can_overwrite = True  # Placeholder
             # self._can_overwrite = settings.export.can_overwrite
 
-        self._xml = None
+        self._tree = None
         self._read_nfo()
-        if self._xml is None and settings.export.can_create_nfo:
-            self._xml = ElementTree.Element(self._root_tags[self._info.type])
+        if self._tree is None and settings.export.can_create_nfo:
+            self._tree = ElementTree.Element(self._root_tags[self._info.type])
 
         self._cleared_arts = []
         self._fanart_tag = None
 
-    def export(self) -> None:
-        if self._xml is None:
+    def run(self) -> None:
+        try:
+            self._export()
+
+        except _ExportFailure as failure:
+            addon.log(f'Export Failure: {failure}')
+            if not self._is_subtask:
+                addon.notify(32043)
+
+    def _export(self) -> None:
+        if self._tree is None:
             return
 
         handlers = {
@@ -126,7 +146,7 @@ class _Exporter:
             raise _ExportFailure(f'Unable to read NFO or file empty - "{self._info.nfo}"')
 
         try:
-            self._xml = ElementTree.fromstring(nfo_contents)
+            self._tree = ElementTree.fromstring(nfo_contents)
         except ElementTree.ParseError as error:
             raise _ExportFailure(f'Unable to parse NFO file "{self._info.nfo}" due to error: {error}')
 
@@ -134,15 +154,16 @@ class _Exporter:
         comment = ElementTree.Comment(
             f'Created {datetime.datetime.now().isoformat(" ", "seconds")} by {addon.name} {addon.version}'
         )
-        self._xml.insert(0, comment)
+        self._tree.insert(0, comment)
 
-        self._pretty_print(self._xml)
+        self._pretty_print(self._tree)
 
         if self._info.nfo is None:
             self._info.create_nfo_path()
 
+        xml = ElementTree.tostring(self._tree, encoding='UTF-8', xml_declaration=True)
         with xbmcvfs.File(self._info.nfo, 'w') as file:
-            success = file.write(ElementTree.tostring(self._xml, encoding='UTF-8', xml_declaration=True))
+            success = file.write(xml)
         if not success:
             raise _ExportFailure(f'Unable to write NFO file "{self._info.nfo}"')
 
@@ -173,9 +194,9 @@ class _Exporter:
 
         if isinstance(value, list):
             for item in value:
-                self._add_tag(self._xml, tag, item)
+                self._add_tag(self._tree, tag, str(item))
         else:
-            self._add_tag(self._xml, tag, value)
+            self._add_tag(self._tree, tag, str(value))
 
     def _convert_art(self, art: dict, season: Optional[int] = None) -> None:
         type_ = art['arttype']
@@ -220,7 +241,7 @@ class _Exporter:
         if self._fanart_tag is None:
             if not self._try_clear_tags('fanart'):
                 return
-            self._fanart_tag = self._add_tag(self._xml, 'fanart')
+            self._fanart_tag = self._add_tag(self._tree, 'fanart')
 
         thumb = self._add_tag(self._fanart_tag, 'thumb', path)
         if preview:
@@ -236,7 +257,7 @@ class _Exporter:
                 return
             self._cleared_arts.append(art_code)
 
-        element = self._add_tag(self._xml, 'thumb')
+        element = self._add_tag(self._tree, 'thumb')
         element.text = path
         element.set('aspect', str(type_))
         if preview:
@@ -247,14 +268,14 @@ class _Exporter:
 
     def _try_clear_art(self, type_: str, season: Optional[int]) -> bool:
         if season is None:
-            for elem in self._xml.findall(f'thumb[@aspect=\'{type_}\']'):
+            for elem in self._tree.findall(f'thumb[@aspect=\'{type_}\']'):
                 # ElementTree doesn't let us filter by an attribute not existing,
                 # so we just skip over season images in non-season image clears
                 if elem.get('season'):
                     continue
                 elif not self._can_overwrite:
                     return False
-                self._xml.remove(elem)
+                self._tree.remove(elem)
         else:
             if not self._try_clear_tags(f'thumb[@aspect=\'{type_}\'][@season=\'{season}\']'):
                 return False
@@ -263,7 +284,7 @@ class _Exporter:
     def _convert_cast(self, field: str, actors: list) -> None:
         del field
 
-        existing_actors = self._xml.findall('actor')
+        existing_actors = self._tree.findall('actor')
         if existing_actors and (settings.export.actor_handling == settings.ActorOption.LEAVE
                                 or not self._can_overwrite):
             return
@@ -274,7 +295,7 @@ class _Exporter:
             actor_bin.extend(existing_actors)
 
         for actor in existing_actors:
-            self._xml.remove(actor)
+            self._tree.remove(actor)
 
         if settings.export.actor_handling == settings.ActorOption.UPDATE:
             self._update_cast(actors, actor_bin)
@@ -283,7 +304,7 @@ class _Exporter:
 
     def _update_cast(self, new_actors: list, old_actors: ElementTree.Element):
         for element in old_actors:
-            self._xml.append(element)
+            self._tree.append(element)
             actor_name = element.find('name').text
             details = next((a for a in new_actors if a['name'] == actor_name), None)
             if details is not None:
@@ -293,9 +314,9 @@ class _Exporter:
         for actor in new_actors:
             element = old_actors.find(f'*/[name=\'{actor["name"]}\']')
             if element is None:
-                element = self._add_tag(self._xml, 'actor')
+                element = self._add_tag(self._tree, 'actor')
             else:
-                self._xml.append(element)
+                self._tree.append(element)
             self._update_actor(element, actor)
 
     def _update_actor(self, element: ElementTree.Element, details: dict) -> None:
@@ -310,15 +331,15 @@ class _Exporter:
 
     def _convert_lastplayed(self, field: str, date: str) -> None:
         del field
-        self._set_tag(self._xml, 'lastplayed', date)
+        self._set_tag(self._tree, 'lastplayed', date)
 
     def _convert_playcount(self, field: str, count: int) -> None:
         del field
 
         watched = 'true' if count > 0 else 'false'
 
-        self._set_tag(self._xml, 'playcount', str(count))
-        self._set_tag(self._xml, 'watched', watched)
+        self._set_tag(self._tree, 'playcount', str(count))
+        self._set_tag(self._tree, 'watched', watched)
 
     def _convert_ratings(self, field: str, ratings: dict) -> None:
         del field
@@ -326,7 +347,7 @@ class _Exporter:
         if not self._try_clear_tags('ratings'):
             return
 
-        element = self._add_tag(self._xml, 'ratings')
+        element = self._add_tag(self._tree, 'ratings')
 
         for rater, details in ratings.items():
             rating = self._add_tag(element, 'rating')
@@ -351,7 +372,7 @@ class _Exporter:
         if not self._try_clear_tags('set'):
             return
 
-        element = self._add_tag(self._xml, 'set')
+        element = self._add_tag(self._tree, 'set')
         self._add_tag(element, 'title', str(self._info.movieset['title']))
         self._add_tag(element, 'overview', str(self._info.movieset['plot']))
 
@@ -361,7 +382,7 @@ class _Exporter:
         if not self._try_clear_tags('fileinfo'):
             return
 
-        file_info = self._add_tag(self._xml, 'fileinfo')
+        file_info = self._add_tag(self._tree, 'fileinfo')
         stream_details = self._add_tag(file_info, 'streamdetails')
 
         for video_info in details['video']:
@@ -391,13 +412,13 @@ class _Exporter:
         if not self._try_clear_tags('trailer'):
             return
 
-        self._add_tag(self._xml, 'trailer', str(path))
+        self._add_tag(self._tree, 'trailer', str(path))
 
     def _convert_uniqueid(self, field: str, unique_ids: dict) -> None:
         del field
 
         default = None
-        default_tag = self._xml.find(f'uniqueid[@default=\'true\']')
+        default_tag = self._tree.find(f'uniqueid[@default=\'true\']')
         if default_tag:
             default = default_tag.get('type', None)
 
@@ -405,7 +426,7 @@ class _Exporter:
             return
 
         for service, service_id in unique_ids.items():
-            element = self._add_tag(self._xml, 'uniqueid', str(service_id))
+            element = self._add_tag(self._tree, 'uniqueid', str(service_id))
             element.set('type', str(service))
             if service == default:
                 element.set('default', 'true')
@@ -413,7 +434,7 @@ class _Exporter:
     def _convert_season(self, season: media.SeasonInfo) -> None:
         addon.log(f'Export - Source JSON (Season {season.details["season"]} Details):\n{season.details}', verbose=True)
         if 'title' in season.details and self._try_clear_tags(f'namedseason[@number=\'{season.details["season"]}\']'):
-            named_season = self._add_tag(self._xml, 'namedseason', str(season.details['title']))
+            named_season = self._add_tag(self._tree, 'namedseason', str(season.details['title']))
             named_season.set('number', str(season.details['season']))
 
         addon.log(f'Export - Source JSON (Season {season.details["season"]} Art):\n{season.art}', verbose=True)
@@ -433,78 +454,57 @@ class _Exporter:
         return element
 
     def _try_clear_tags(self, search: str) -> bool:
-        elements = self._xml.findall(search)
+        elements = self._tree.findall(search)
         if elements and not self._can_overwrite:
             return False
         for element in elements:
-            self._xml.remove(element)
+            self._tree.remove(element)
         return True
 
 
-def export(
-        info: Optional[media.MediaInfo] = None,
-        subtask: bool = False,
-        overwrite: Optional[bool] = None
-) -> bool:
-    try:
-        exporter = _Exporter(
-            info=info,
-            subtask=subtask,
-            overwrite=overwrite
-        )
-        exporter.export()
+class ExportAll(Action):
 
-    except _ExportFailure as failure:
-        addon.log(f'Export Failure: {failure}')
-        if not subtask:
-            addon.notify(32043)
-        return False
+    _type = 'Export All'
 
-    return True
+    def run(self) -> None:
+        dialog = xbmcgui.DialogProgress()
+        dialog.create(addon.getLocalizedString(32069))
 
+        failures = False
 
-class _DialogCancelled(Exception):
-    pass
+        def export_type(type_: str, message: int, fraction: int, base_progress: int) -> bool:
+            type_info = media.TYPE_INFO[type_]
 
+            full_success = True
+            items = media.get_all(type_)
+            count = 0
+            total = len(items)
+            for item in items:
+                ExportOne(media.MediaInfo(type_, item[type_info.id_name], file=item['file']), subtask=True).run()
+                success = True  # Let's just assume for now, until the error handling pass
+                if not success:
+                    full_success = False
+                if dialog.iscanceled():
+                    raise _DialogCancelled
+                count += 1
+                progress = int(count / total * fraction) + base_progress
+                dialog.update(progress, addon.getLocalizedString(message))
 
-def export_all() -> None:
-    dialog = xbmcgui.DialogProgress()
-    dialog.create(addon.getLocalizedString(32069))
+            return full_success
 
-    failures = False
+        try:
+            if not export_type(type_='movie', message=32070, fraction=33, base_progress=0):
+                failures = True
+            if not export_type(type_='tvshow', message=32071, fraction=33, base_progress=33):
+                failures = True
+            if not export_type(type_='episode', message=32072, fraction=34, base_progress=66):
+                failures = True
 
-    def export_type(type_: str, message: int, fraction: int, base_progress: int) -> bool:
-        type_info = media.TYPE_INFO[type_]
+        except _DialogCancelled:
+            pass
 
-        full_success = True
-        items = media.get_all(type_)
-        count = 0
-        total = len(items)
-        for item in items:
-            success = export(media.MediaInfo(type_, item[type_info.id_name], file=item['file']), subtask=True)
-            if not success:
-                full_success = False
-            if dialog.iscanceled():
-                raise _DialogCancelled
-            count += 1
-            progress = int(count / total * fraction) + base_progress
-            dialog.update(progress, addon.getLocalizedString(message))
-
-        return full_success
-
-    try:
-        if not export_type(type_='movie', message=32070, fraction=33, base_progress=0):
-            failures = True
-        if not export_type(type_='tvshow', message=32071, fraction=33, base_progress=33):
-            failures = True
-        if not export_type(type_='episode', message=32072, fraction=34, base_progress=66):
-            failures = True
-
-    except _DialogCancelled:
-        pass
-
-    finally:
-        last_known.write_changes()
-        dialog.close()
-        if failures:
-            addon.notify(32073)
+        finally:
+            last_known.write_changes()
+            dialog.close()
+            if failures:
+                addon.notify(32073)
