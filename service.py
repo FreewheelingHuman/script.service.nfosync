@@ -31,14 +31,14 @@ class Service(xbmc.Monitor):
         self._patient_action_queue = collections.deque()
 
         self._periodic_trigger = Alarm(
-            name='periodic.trigger',
+            name='Service.PeriodicTrigger',
             message=jsonrpc.INTERNAL_METHODS.sync_all.send,
             data={'patient': True},
             loop=True
         )
         self._waiter = Alarm(
-            name='avoidance.wait',
-            message=jsonrpc.INTERNAL_METHODS.wait_done
+            name='Service.AvoidanceWait',
+            message=jsonrpc.INTERNAL_METHODS.wait_done.send
         )
 
         if settings.triggers.should_sync_on_start:
@@ -56,6 +56,8 @@ class Service(xbmc.Monitor):
             if self._is_scheduled_sync_due():
                 self._queue_action(actions.SyncAll(), patient=True)
                 self._update_schedule()
+
+        last_known.write_changes()
 
     def onNotification(self, sender: str, method: str, data: str) -> None:
         data = json.loads(data)
@@ -83,13 +85,16 @@ class Service(xbmc.Monitor):
         elif method == jsonrpc.INTERNAL_METHODS.wait_done.recv:
             self._run_actions()
 
+        elif method == jsonrpc.INTERNAL_METHODS.write_changes.recv:
+            self._queue_action(actions.WriteChanges(), patient=data['patient'])
+
         elif method == 'Player.OnPlay':
             self._waiter.cancel()
 
         elif method == 'Player.OnStop':
             self._play_stop()
 
-        elif method == 'VideoLibrary.OnUpdate' and settings.triggers.should_export_on_update:
+        elif method == 'VideoLibrary.OnUpdate':
             self._library_update(data)
 
         elif method == 'VideoLibrary.OnScanFinished' and settings.triggers.should_sync_on_scan:
@@ -141,17 +146,23 @@ class Service(xbmc.Monitor):
     def _library_update(self, data: dict) -> None:
         item = data['item']
 
-        # Always ignore added items if they aren't part a transaction because
-        # refreshing an item will trigger a non-transactional update event.
-        # We still want to update the timestamp and checksum, however.
+        if item['type'] not in ['movie', 'tvshow', 'episode']:
+            return
+
+        if not settings.triggers.should_export_on_update:
+            if data.get('added'):
+                last_known.set_timestamp(item['type'], item['id'], utcdt.now())
+                if settings.triggers.ignores_add_updates:
+                    last_known.set_checksum(item['type'], item['id'])
+            return
+
         if data.get('added') and (settings.triggers.ignores_add_updates or not data.get('transaction')):
             last_known.set_timestamp(item['type'], item['id'], utcdt.now())
             last_known.set_checksum(item['type'], item['id'])
             return
 
-        if item['type'] in ['movie', 'tvshow', 'episode']:
-            info = media.MediaInfo(item['type'], item['id'])
-            self._queue_action(actions.ExportOne(info), patient=False)
+        info = media.MediaInfo(item['type'], item['id'])
+        self._queue_action(actions.ExportOne(info), patient=False)
 
     def _play_stop(self):
         if settings.avoidance.wait_time:
@@ -191,6 +202,8 @@ class Service(xbmc.Monitor):
             self._active_action.run()
             if not self._active_action.is_done:
                 return
+
+        self._active_action = None
 
     def _continue_actions(self):
         self._active_action.run()

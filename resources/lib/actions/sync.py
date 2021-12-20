@@ -101,7 +101,6 @@ class SyncAll(Action):
             if self._awaiting:
                 return
 
-        last_known.write_changes()
         self._close_dialog()
 
         if self._failures:

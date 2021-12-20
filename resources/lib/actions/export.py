@@ -129,11 +129,7 @@ class ExportOne(Action):
             )
         else:
             last_known.set_timestamp(self._info.type, self._info.id, timestamp)
-
         last_known.set_checksum(self._info.type, self._info.id, self._info.checksum)
-
-        if not self._is_subtask:
-            last_known.write_changes()
 
     def _read_nfo(self) -> None:
         if self._info.nfo is None:

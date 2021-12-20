@@ -2,9 +2,11 @@ from typing import Final, Optional
 
 import xbmcvfs
 
+import resources.lib.jsonrpc as jsonrpc
 import resources.lib.media as media
 import resources.lib.utcdt as utcdt
 from resources.lib.addon import addon
+from resources.lib.alarm import Alarm
 
 
 class _NoMoreBytes(Exception):
@@ -135,12 +137,21 @@ class _Tracker:
 
 
 class _LastKnown:
+
+    _cool_down = 1  # Minutes
+
     def __init__(self):
         self._trackers = {
             'movie': _Tracker('movies'),
             'episode': _Tracker('episodes'),
             'tvshow': _Tracker('tvshows')
         }
+
+        self._write_timer = Alarm(
+            name='LastKnown.WriteTimer',
+            message=jsonrpc.INTERNAL_METHODS.write_changes.send,
+            data={'patient': True}
+        )
 
     def checksum(self, type_: str, id_: int) -> Optional[int]:
         return self._trackers[type_].get(id_, 'checksum')
@@ -149,6 +160,7 @@ class _LastKnown:
         if checksum is None:
             checksum = media.MediaInfo(type_, id_).checksum
         self._trackers[type_].set(id_, 'checksum', checksum)
+        self._write_timer.set(self._cool_down)
 
     def timestamp(self, type_: str, id_: int) -> Optional[utcdt.UtcDt]:
         epoch_timestamp = self._trackers[type_].get(id_, 'timestamp')
@@ -159,6 +171,7 @@ class _LastKnown:
     def set_timestamp(self, type_: str, id_: int, timestamp: utcdt.UtcDt) -> None:
         epoch_timestamp = int(timestamp.timestamp())
         self._trackers[type_].set(id_, 'timestamp', epoch_timestamp)
+        self._write_timer.set(self._cool_down)
 
     def write_changes(self):
         for tracker in self._trackers.values():
