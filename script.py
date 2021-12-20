@@ -15,7 +15,7 @@ def _sync_all(arguments: list):
             is_patient = True
 
     jsonrpc.notify(
-        message=jsonrpc.INTERNAL_METHODS.immediate_sync.send,
+        message=jsonrpc.INTERNAL_METHODS.sync_all.send,
         data={'patient': is_patient}
     )
 
@@ -91,7 +91,7 @@ def _export_one(arguments: list):
             is_patient = True
 
     jsonrpc.notify(
-        message=jsonrpc.INTERNAL_METHODS.export.send,
+        message=jsonrpc.INTERNAL_METHODS.export_one.send,
         data={'type': arguments[0], 'id': arguments[1], 'patient': is_patient}
     )
 
