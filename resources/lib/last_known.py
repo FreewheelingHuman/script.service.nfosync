@@ -106,6 +106,7 @@ class _Tracker:
 
         if not success:
             addon.log(f'Unable to write tracker file "{self._file}"')
+            addon.notify(32006)
 
     def _import_bytes(self, bytes_: bytearray) -> None:
         byte_reader = _ByteReader(bytes_)
