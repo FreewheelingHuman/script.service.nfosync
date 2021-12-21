@@ -328,3 +328,21 @@ msgstr ""
 msgctxt "#32078"
 msgid "Export All"
 msgstr ""
+
+msgctxt "#32079"
+msgid "Only export watched state info"
+msgstr ""
+
+msgctxt "#32080"
+msgid "The only tags exported will be watched, playcount, and lastplayed."
+msgstr ""
+
+msgctxt "#32081"
+msgid "Overwrite existing tags in NFOs"
+msgstr ""
+
+msgctxt "#32082"
+msgid ""
+"Impacts all tags except watched, playcount, and lastplayed which always overwrite. "
+"Only tags that have information to export from Kodi will be overwritten."
+msgstr ""

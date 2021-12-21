@@ -57,6 +57,19 @@
 	                    <dependency type="enable" setting="export.can_create_nfo">true</dependency>
                     </dependencies>
                 </setting>
+                <setting id="export.is_minimal" type="boolean" label="32079" help="32080">
+                    <level>0</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
+                <setting id="export.can_overwrite" type="boolean" label="32081" help="32082">
+                    <level>0</level>
+                    <default>true</default>
+                    <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="export.is_minimal">false</dependency>
+                    </dependencies>
+                </setting>
                 <setting id="export.actor_handling" type="string" label="32025" help="32026">
                     <level>1</level>
                     <default>leave</default>
@@ -72,11 +85,17 @@
                     <control type="list" format="string">
                         <heading>32025</heading>
                     </control>
+                    <dependencies>
+	                    <dependency type="enable" setting="export.is_minimal">false</dependency>
+                    </dependencies>
                 </setting>
                 <setting id="export.should_export_plugin_trailers" type="boolean" label="32044" help="32045">
                     <level>1</level>
                     <default>false</default>
                     <control type="toggle" />
+                    <dependencies>
+	                    <dependency type="enable" setting="export.is_minimal">false</dependency>
+                    </dependencies>
                 </setting>
             </group>
         </category>
