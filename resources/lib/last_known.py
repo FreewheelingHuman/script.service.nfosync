@@ -44,10 +44,11 @@ class _Tracker:
 
     _version: Final = 0
 
-    def __init__(self, name: str):
+    def __init__(self, type_: str):
         self._contents = {}
         self._has_unwritten_changes = False
-        self._file: Final = xbmcvfs.translatePath(f'{addon.profile}{name}.dat')
+        self._type = type_
+        self._file: Final = xbmcvfs.translatePath(f'{addon.profile}{self._type}.dat')
 
         if not xbmcvfs.exists(self._file):
             return
@@ -68,9 +69,6 @@ class _Tracker:
             self._contents[id_] = {}
         self._contents[id_][field] = value
 
-    def delete(self, id_: int) -> None:
-        del self._contents[id_]
-
     def write(self) -> None:
         if not self._has_unwritten_changes:
             return
@@ -79,7 +77,12 @@ class _Tracker:
 
         bytes_.extend(self._version.to_bytes(self._version_bytes, byteorder='little'))
 
+        to_purge = []
         for id_, fields in self._contents.items():
+            if not media.exists(self._type, id_):
+                to_purge.append(id_)
+                continue
+
             bytes_.extend(id_.to_bytes(self._id_bytes, byteorder='little'))
 
             status_bits = 0
@@ -99,6 +102,9 @@ class _Tracker:
             bytes_.extend(status_bits.to_bytes(self._status_bytes, byteorder='little'))
             bytes_.extend(checksum.to_bytes(self._checksum_bytes, byteorder='little'))
             bytes_.extend(timestamp.to_bytes(self._timestamp_bytes, byteorder='little'))
+
+        for id_ in to_purge:
+            del self._contents[id_]
 
         xbmcvfs.mkdir(addon.profile)
         with xbmcvfs.File(self._file, 'w') as file:
@@ -143,9 +149,9 @@ class _LastKnown:
 
     def __init__(self):
         self._trackers = {
-            'movie': _Tracker('movies'),
-            'episode': _Tracker('episodes'),
-            'tvshow': _Tracker('tvshows')
+            'movie': _Tracker('movie'),
+            'episode': _Tracker('episode'),
+            'tvshow': _Tracker('tvshow')
         }
 
         self._write_timer = Alarm(

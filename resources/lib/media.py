@@ -164,6 +164,15 @@ TYPE_INFO: Final = {
 }
 
 
+def exists(type_: str, id_: int) -> bool:
+    type_info = TYPE_INFO[type_]
+    try:
+        jsonrpc.request(type_info.details_method, **{type_info.id_name: id_, 'properties': []})
+    except jsonrpc.RequestError:
+        return False
+    return True
+
+
 def get_all(type_: str) -> list:
     type_info = TYPE_INFO[type_]
     result = jsonrpc.request(
