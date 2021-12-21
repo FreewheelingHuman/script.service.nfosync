@@ -312,3 +312,19 @@ msgstr ""
 msgctxt "#32074"
 msgid "Unable to run action - see log"
 msgstr ""
+
+msgctxt "#32075"
+msgid "Tools"
+msgstr ""
+
+msgctxt "#32076"
+msgid "Sync Now"
+msgstr ""
+
+msgctxt "#32077"
+msgid "Import All"
+msgstr ""
+
+msgctxt "#32078"
+msgid "Export All"
+msgstr ""

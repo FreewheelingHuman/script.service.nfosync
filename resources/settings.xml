@@ -222,5 +222,30 @@
                 </setting>
             </group>
         </category>
+        <category id="tools" label="32075" help="">
+            <group id="tools.tools" label="32075">
+                <setting id="tool.sync_now" type="action" label="32076" help="">
+                    <level>0</level>
+                    <data>RunScript(script.service.nfosync,sync_all)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="tool.import_all" type="action" label="32077" help="">
+                    <level>0</level>
+                    <data>RunScript(script.service.nfosync,import_all)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+                <setting id="tool.export_all" type="action" label="32078" help="">
+                    <level>0</level>
+                    <data>RunScript(script.service.nfosync,export_all)</data>
+                    <control type="button" format="action">
+                        <close>true</close>
+                    </control>
+                </setting>
+            </group>
+        </category>
     </section>
 </settings>
