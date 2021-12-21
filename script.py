@@ -4,22 +4,6 @@ import resources.lib.jsonrpc as jsonrpc
 from resources.lib.addon import addon
 
 
-def _sync_all(arguments: list):
-    is_patient = False
-    if arguments:
-        if arguments[0] != 'patient' or len(arguments) > 1:
-            addon.log(f'Script - sync_all received an invalid argument: "{arguments[0]}". If present,'
-                      f'the argument must be "patient".')
-            addon.notify(32074)
-        else:
-            is_patient = True
-
-    jsonrpc.notify(
-        message=jsonrpc.INTERNAL_METHODS.sync_all.send,
-        data={'patient': is_patient}
-    )
-
-
 def _sync_one(arguments: list):
     is_patient = False
 
@@ -47,6 +31,22 @@ def _sync_one(arguments: list):
     jsonrpc.notify(
         message=jsonrpc.INTERNAL_METHODS.sync_one.send,
         data={'type': arguments[0], 'id': arguments[1], 'patient': is_patient}
+    )
+
+
+def _sync_all(arguments: list):
+    is_patient = False
+    if arguments:
+        if arguments[0] != 'patient' or len(arguments) > 1:
+            addon.log(f'Script - sync_all received an invalid argument: "{arguments[0]}". If present,'
+                      f'the argument must be "patient".')
+            addon.notify(32074)
+        else:
+            is_patient = True
+
+    jsonrpc.notify(
+        message=jsonrpc.INTERNAL_METHODS.sync_all.send,
+        data={'patient': is_patient}
     )
 
 
