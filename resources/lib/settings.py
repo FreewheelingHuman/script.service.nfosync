@@ -50,6 +50,14 @@ class _Export:
         return MovieNfoOption(addon.getSettingString('export.movie_nfo_naming'))
 
     @property
+    def is_minimal(self) -> bool:
+        return addon.getSettingBool('export.is_minimal')
+
+    @property
+    def can_overwrite(self) -> bool:
+        return addon.getSettingBool('export.can_overwrite')
+
+    @property
     def actor_handling(self) -> ActorOption:
         return ActorOption(addon.getSettingString('export.actor_handling'))
 

@@ -57,13 +57,11 @@ class ExportOne(Action):
         self._is_subtask = subtask
         self._info = info
 
-        self._is_minimal = False  # Placeholder
-        # self._is_minimal = settings.export.is_minimal
+        self._is_minimal = settings.export.is_minimal
 
         self._can_overwrite = overwrite
         if self._can_overwrite is None:
-            self._can_overwrite = True  # Placeholder
-            # self._can_overwrite = settings.export.can_overwrite
+            self._can_overwrite = settings.export.can_overwrite
 
         self._tree = None
         self._read_nfo()
