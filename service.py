@@ -152,11 +152,11 @@ class Service(xbmc.Monitor):
         if not settings.triggers.should_export_on_update:
             if data.get('added'):
                 last_known.set_timestamp(item['type'], item['id'], utcdt.now())
-                if settings.triggers.ignores_add_updates:
+                if settings.export.should_ignore_new:
                     last_known.set_checksum(item['type'], item['id'])
             return
 
-        if data.get('added') and (settings.triggers.ignores_add_updates or not data.get('transaction')):
+        if data.get('added') and (settings.export.should_ignore_new or not data.get('transaction')):
             last_known.set_timestamp(item['type'], item['id'], utcdt.now())
             last_known.set_checksum(item['type'], item['id'])
             return

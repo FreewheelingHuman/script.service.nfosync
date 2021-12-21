@@ -35,6 +35,11 @@
             <group id="import" label="32027">
             </group>
             <group id="export" label="32024">
+                <setting id="export.should_ignore_new" type="boolean" label="32020" help="32083">
+                   	<level>2</level>
+                    <default>false</default>
+                    <control type="toggle" />
+                </setting>
                 <setting id="export.can_create_nfo" type="boolean" label="32013" help="">
                     <level>0</level>
                     <default>false</default>
@@ -115,15 +120,6 @@
                     <level>0</level>
                     <default>false</default>
                     <control type="toggle" />
-                </setting>
-                <setting id="triggers.ignores_add_updates"
-                         type="boolean" label="32020" help="" parent="triggers.should_export_on_update">
-                   	<level>2</level>
-                    <default>false</default>
-                    <control type="toggle" />
-                    <dependencies>
-	                    <dependency type="enable" setting="triggers.should_export_on_update">true</dependency>
-                    </dependencies>
                 </setting>
             </group>
             <group id="playback_avoidance" label="32019">

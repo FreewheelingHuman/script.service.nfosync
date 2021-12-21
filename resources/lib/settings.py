@@ -50,6 +50,10 @@ class _Export:
         return MovieNfoOption(addon.getSettingString('export.movie_nfo_naming'))
 
     @property
+    def should_ignore_new(self) -> bool:
+        return addon.getSettingBool('export.should_ignore_new')
+
+    @property
     def is_minimal(self) -> bool:
         return addon.getSettingBool('export.is_minimal')
 
@@ -79,10 +83,6 @@ class _Triggers:
     @property
     def should_export_on_update(self) -> bool:
         return addon.getSettingBool('triggers.should_export_on_update')
-
-    @property
-    def ignores_add_updates(self) -> bool:
-        return addon.getSettingBool('triggers.ignores_add_updates')
 
 
 class _Avoidance:
