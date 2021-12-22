@@ -35,11 +35,11 @@ msgid "Scan for new items"
 msgstr ""
 
 msgctxt "#32006"
-msgid "Unable to save state - see log"
+msgid "Unable to save state"
 msgstr ""
 
 msgctxt "#32007"
-msgid "Errors during import - see log"
+msgid "Unable to import item"
 msgstr ""
 
 msgctxt "#32008"
@@ -51,7 +51,7 @@ msgid "Movie NFO file name"
 msgstr ""
 
 msgctxt "#32010"
-msgid "Syncing changes"
+msgid "1 of 3: Syncing Movies"
 msgstr ""
 
 msgctxt "#32011"
@@ -59,7 +59,7 @@ msgid "NFO Sync"
 msgstr ""
 
 msgctxt "#32012"
-msgid "Adding"
+msgid "2 of 3: Syncing TV Shows"
 msgstr ""
 
 msgctxt "#32013"
@@ -183,7 +183,7 @@ msgid "Update existing tags, by exact name"
 msgstr ""
 
 msgctxt "#32043"
-msgid "Export failure - see log for details"
+msgid "Unable to export item"
 msgstr ""
 
 msgctxt "#32044"
@@ -270,47 +270,47 @@ msgid "Time to sync"
 msgstr ""
 
 msgctxt "#32064"
-msgid "Errors during sync - see log"
+msgid "Unable to complete full sync"
 msgstr ""
 
 msgctxt "#32065"
-msgid "Importing"
+msgid "NFO Sync - Importing All"
 msgstr ""
 
 msgctxt "#32066"
-msgid "Importing Movies"
+msgid "1 of 3: Importing Movies"
 msgstr ""
 
 msgctxt "#32067"
-msgid "Importing TV Shows"
+msgid "2 of 3: Importing TV Shows"
 msgstr ""
 
 msgctxt "#32068"
-msgid "Importing Episodes"
+msgid "3 of 3: Importing Episodes"
 msgstr ""
 
 msgctxt "#32069"
-msgid "Exporting"
+msgid "NFO Sync - Exporting All"
 msgstr ""
 
 msgctxt "#32070"
-msgid "Exporting Movies"
+msgid "1 of 3: Exporting Movies"
 msgstr ""
 
 msgctxt "#32071"
-msgid "Exporting TV Shows"
+msgid "2 of 3: Exporting TV Shows"
 msgstr ""
 
 msgctxt "#32072"
-msgid "Exporting Episodes"
+msgid "3 of 3: Exporting Episodes"
 msgstr ""
 
 msgctxt "#32073"
-msgid "Errors during export - see log"
+msgid "Unable to complete full export"
 msgstr ""
 
 msgctxt "#32074"
-msgid "Unable to run action - see log"
+msgid "Unable to run requested action"
 msgstr ""
 
 msgctxt "#32075"
@@ -351,4 +351,16 @@ msgctxt "#32083"
 msgid ""
 "This will prevent newly added items from being exported until they are subsequently changed. "
 "Useful if you're only using local metadata and want to avoid unnecessary exports."
+msgstr ""
+
+msgctxt "#32084"
+msgid "3 of 3: Syncing Episodes"
+msgstr ""
+
+msgctxt "#32085"
+msgid "Unable to complete full import"
+msgstr ""
+
+msgctxt "#32086"
+msgid "Unable to sync item"
 msgstr ""

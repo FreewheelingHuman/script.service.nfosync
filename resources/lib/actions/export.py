@@ -1,29 +1,22 @@
 import datetime
 import xml.etree.ElementTree as ElementTree
-from typing import Callable, Optional, Union
+from typing import Callable, Final, Iterator, Optional, Union
 
-import xbmcgui
 import xbmcvfs
 
+import resources.lib.gui as gui
 import resources.lib.media as media
 import resources.lib.settings as settings
 from resources.lib.addon import addon
 from resources.lib.last_known import last_known
 
 from . import *
-
-
-class _DialogCancelled(Exception):
-    pass
-
-
-class _ExportFailure(Exception):
-    pass
+from . import _PhasedAction
 
 
 class ExportOne(Action):
 
-    _type = 'Export One'
+    _type: Final = 'Export One'
 
     # Ignoring label. It always gets returned and is a duplicate to title
     # so far as I can see. However, not sure if it is always the same as
@@ -49,15 +42,11 @@ class ExportOne(Action):
     def __init__(
             self,
             info: media.MediaInfo,
-            overwrite: Optional[bool] = None,
-            subtask: bool = False
+            overwrite: Optional[bool] = None
     ):
         super().__init__()
 
-        self._is_subtask = subtask
         self._info = info
-
-        self._is_minimal = settings.export.is_minimal
 
         self._can_overwrite = overwrite
         if self._can_overwrite is None:
@@ -71,18 +60,10 @@ class ExportOne(Action):
         self._cleared_arts = []
         self._fanart_tag = None
 
-    def run(self) -> None:
-        try:
-            self._export()
-
-        except _ExportFailure as failure:
-            addon.log(f'Export Failure: {failure}')
-            if not self._is_subtask:
-                addon.notify(32043)
-
-    def _export(self) -> None:
+    def run(self, data: Optional[dict] = None) -> bool:
+        del data
         if self._tree is None:
-            return
+            return True
 
         handlers = {
             'art': self._convert_art,
@@ -96,7 +77,7 @@ class ExportOne(Action):
             'trailer': self._convert_trailer
         }
         addon.log(f'Export - Source Info (Details):\n{self._info.details}', verbose=True)
-        if self._is_minimal:
+        if settings.export.is_minimal:
             for field in self._minimal_fields:
                 if field not in self._info.details:
                     continue
@@ -137,12 +118,12 @@ class ExportOne(Action):
             nfo_contents = file.read()
 
         if nfo_contents == '':
-            raise _ExportFailure(f'Unable to read NFO or file empty - "{self._info.nfo}"')
+            raise ActionError(32043, f'Unable to read NFO or file empty - "{self._info.nfo}"')
 
         try:
             self._tree = ElementTree.fromstring(nfo_contents)
         except ElementTree.ParseError as error:
-            raise _ExportFailure(f'Unable to parse NFO file "{self._info.nfo}" due to error: {error}')
+            raise ActionError(32043, f'Unable to parse NFO file "{self._info.nfo}" due to error: {error}')
 
     def _write_nfo(self):
         comment = ElementTree.Comment(
@@ -159,7 +140,7 @@ class ExportOne(Action):
         with xbmcvfs.File(self._info.nfo, 'w') as file:
             success = file.write(xml)
         if not success:
-            raise _ExportFailure(f'Unable to write NFO file "{self._info.nfo}"')
+            raise ActionError(32043, f'Unable to write NFO file "{self._info.nfo}"')
 
     def _pretty_print(self, element: ElementTree.Element, level=1) -> None:
         def indent(indent_level):
@@ -456,49 +437,51 @@ class ExportOne(Action):
         return True
 
 
-class ExportAll(Action):
+_export_all_progress = gui.AllActionProgress(32069)
 
-    _type = 'Export All'
 
-    def run(self) -> None:
-        dialog = xbmcgui.DialogProgress()
-        dialog.create(addon.getLocalizedString(32069))
+class _ExportType(_PhasedAction):
 
-        failures = False
+    _type: Final = 'Export Type'
 
-        def export_type(type_: str, message: int, fraction: int, base_progress: int) -> bool:
-            type_info = media.TYPE_INFO[type_]
+    def __init__(self, type_: str, message: int):
+        super().__init__()
+        self._media_type = type_
+        self._message = message
 
-            full_success = True
-            items = media.get_all(type_)
-            count = 0
-            total = len(items)
-            for item in items:
-                ExportOne(media.MediaInfo(type_, item[type_info.id_name], file=item['file']), subtask=True).run()
-                success = True  # Let's just assume for now, until the error handling pass
-                if not success:
-                    full_success = False
-                if dialog.iscanceled():
-                    raise _DialogCancelled
-                count += 1
-                progress = int(count / total * fraction) + base_progress
-                dialog.update(progress, addon.getLocalizedString(message))
+    def _phases(self) -> Iterator[Action]:
+        type_info = media.TYPE_INFO[self._media_type]
+        items = media.get_all(self._media_type)
+        count = 0
+        total = len(items)
+        for item in items:
+            if _export_all_progress.is_canceled:
+                break
+            _export_all_progress.set(self._message, count, total)
+            yield ExportOne(media.MediaInfo(self._media_type, item[type_info.id_name], file=item['file']))
+            count += 1
 
-            return full_success
 
-        try:
-            if not export_type(type_='movie', message=32070, fraction=33, base_progress=0):
-                failures = True
-            if not export_type(type_='tvshow', message=32071, fraction=33, base_progress=33):
-                failures = True
-            if not export_type(type_='episode', message=32072, fraction=34, base_progress=66):
-                failures = True
+class ExportAll(_PhasedAction):
 
-        except _DialogCancelled:
-            pass
+    _type: Final = 'Export All'
 
-        finally:
-            last_known.write_changes()
-            dialog.close()
-            if failures:
-                addon.notify(32073)
+    _types_to_import = {
+        'movie': 32070,
+        'tvshow': 32071,
+        'episode': 32072
+    }
+
+    def _phases(self) -> Iterator[Action]:
+        for type_, message in self._types_to_import.items():
+            if _export_all_progress.is_canceled:
+                break
+            yield _ExportType(type_=type_, message=message)
+
+    def _exception(self, error: Exception) -> None:
+        if isinstance(error, ActionError):
+            raise ActionError(32085, f'Export - Unable to complete Export All"') from error
+        super()._exception(error)
+
+    def _cleanup(self):
+        _export_all_progress.close()

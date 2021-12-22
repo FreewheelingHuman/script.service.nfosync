@@ -1,7 +1,8 @@
 import collections
 import datetime
 import json
-from typing import Final
+import traceback
+from typing import Optional, Final
 
 import xbmc
 
@@ -63,40 +64,32 @@ class Service(xbmc.Monitor):
         data = json.loads(data)
 
         if self._active_action and method == self._active_action.awaiting:
-            self._continue_actions()
+            is_notification_consumed = self._continue_actions(data)
+            if is_notification_consumed:
+                return
 
-        elif method == jsonrpc.INTERNAL_METHODS.sync_all.recv:
+        if method == jsonrpc.INTERNAL_METHODS.sync_all.recv:
             self._queue_action(actions.SyncAll(), patient=data['patient'])
-
         elif method == jsonrpc.INTERNAL_METHODS.sync_one.recv:
             info = media.MediaInfo(data['type'], data['id'])
             self._queue_action(actions.SyncOne(info), patient=data['patient'])
-
         elif method == jsonrpc.INTERNAL_METHODS.import_all.recv:
             self._queue_action(actions.ImportAll(), patient=data['patient'])
-
         elif method == jsonrpc.INTERNAL_METHODS.export_one.recv:
             info = media.MediaInfo(data['type'], data['id'])
             self._queue_action(actions.ExportOne(info), patient=data['patient'])
-
         elif method == jsonrpc.INTERNAL_METHODS.export_all.recv:
             self._queue_action(actions.ExportAll(), patient=data['patient'])
-
         elif method == jsonrpc.INTERNAL_METHODS.wait_done.recv:
             self._run_actions()
-
         elif method == jsonrpc.INTERNAL_METHODS.write_changes.recv:
             self._queue_action(actions.WriteChanges(), patient=data['patient'])
-
         elif method == 'Player.OnPlay':
             self._waiter.cancel()
-
         elif method == 'Player.OnStop':
             self._play_stop()
-
         elif method == 'VideoLibrary.OnUpdate':
             self._library_update(data)
-
         elif method == 'VideoLibrary.OnScanFinished' and settings.triggers.should_sync_on_scan:
             self._queue_action(actions.SyncAll(should_skip_scan=True), patient=True)
 
@@ -187,29 +180,37 @@ class Service(xbmc.Monitor):
             return False
         return True
 
-    def _run_actions(self):
+    def _run_action(self, action: actions.Action, data: Optional[dict] = None) -> bool:
+        try:
+            return action.run(data)
+        except actions.ActionError as error:
+            addon.log(''.join(traceback.TracebackException.from_exception(error).format()))
+            addon.notify(error.notification)
+
+    def _run_actions(self) -> None:
         if self._active_action:
             return
 
         while self._action_queue:
             self._active_action = self._action_queue.pop()
-            self._active_action.run()
+            self._run_action(self._active_action)
             if not self._active_action.is_done:
                 return
 
         while self._patient_action_queue and self._can_patient_actions_run:
             self._active_action = self._patient_action_queue.pop()
-            self._active_action.run()
+            self._run_action(self._active_action)
             if not self._active_action.is_done:
                 return
 
         self._active_action = None
 
-    def _continue_actions(self):
-        self._active_action.run()
+    def _continue_actions(self, data: dict) -> bool:
+        is_notification_consumed = self._run_action(self._active_action, data)
         if self._active_action.is_done:
             self._active_action = None
             self._run_actions()
+        return is_notification_consumed
 
     def _queue_action(self, action: actions.Action, patient: bool):
         if action.type in self._limited_actions and action.type in self._queued_types:
