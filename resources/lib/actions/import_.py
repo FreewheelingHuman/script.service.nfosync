@@ -37,10 +37,14 @@ class ImportOne(Action):
             return False
 
     def _request(self) -> None:
+        parameters = {media.TYPE_INFO[self._info.type].id_name: self._info.id}
+        if self._info.type == 'tvshow':
+            parameters['refreshepisodes'] = True
+
         try:
             jsonrpc.request(
                 media.TYPE_INFO[self._info.type].refresh_method,
-                **{media.TYPE_INFO[self._info.type].id_name: self._info.id}
+                **parameters
             )
             addon.log(f'Import - A refresh has been requested for "{self._info.file}"', verbose=True)
         except jsonrpc.RequestError as error:
