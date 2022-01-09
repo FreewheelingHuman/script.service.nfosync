@@ -71,6 +71,7 @@ class ExportOne(Action):
             'lastplayed': self._convert_lastplayed,
             'playcount': self._convert_playcount,
             'ratings': self._convert_ratings,
+            'runtime': self._convert_runtime,
             'setid': self._convert_set,
             'streamdetails': self._convert_streamdetails,
             'uniqueid': self._convert_uniqueid,
@@ -337,6 +338,16 @@ class ExportOne(Action):
             self._add_tag(rating, 'value', str(round(details.get('rating', 0.0), 1)))
             if 'votes' in details:
                 self._add_tag(rating, 'votes', str(details['votes']))
+
+    def _convert_runtime(self, field: str, runtime: int):
+        del field
+
+        if not self._try_clear_tags('runtime'):
+            return
+
+        runtime_in_minutes = (runtime + 30) // 60
+
+        self._add_tag(self._tree, 'runtime', str(runtime_in_minutes))
 
     def _convert_set(self, field: str, set_id: int) -> None:
         del field
