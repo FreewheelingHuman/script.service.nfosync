@@ -52,6 +52,10 @@ class ExportOne(Action):
         if self._can_overwrite is None:
             self._can_overwrite = settings.export.can_overwrite
 
+        self._can_overwrite_watch_info = False
+        if overwrite is not None:
+            self._can_overwrite_watch_info = overwrite
+
         self._tree = None
         self._read_nfo()
         if self._tree is None and settings.export.can_create_nfo:
@@ -307,15 +311,22 @@ class ExportOne(Action):
 
     def _convert_lastplayed(self, field: str, date: str) -> None:
         del field
-        self._set_tag(self._tree, 'lastplayed', date)
+
+        existing_lastplayed = self._tree.find('lastplayed')
+        if existing_lastplayed is None or self._can_overwrite_watch_info:
+            self._set_tag(self._tree, 'lastplayed', date)
 
     def _convert_playcount(self, field: str, count: int) -> None:
         del field
 
-        watched = 'true' if count > 0 else 'false'
+        existing_playcount = self._tree.find('playcount')
+        if existing_playcount is None or self._can_overwrite_watch_info:
+            self._set_tag(self._tree, 'playcount', str(count))
 
-        self._set_tag(self._tree, 'playcount', str(count))
-        self._set_tag(self._tree, 'watched', watched)
+        watched = 'true' if count > 0 else 'false'
+        existing_watched = self._tree.find('watched')
+        if existing_watched is None or self._can_overwrite_watch_info:
+            self._set_tag(self._tree, 'watched', watched)
 
     def _convert_ratings(self, field: str, ratings: dict) -> None:
         del field
